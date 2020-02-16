@@ -59,7 +59,7 @@ try {
                         return;
                     } else {
                         //페이로드에 맞게 다시 설정 요함
-                        $json = json_encode(User($req->email));
+                        $json = json_encode(UserNo($req->email));
                         $no = json_decode($json);
                         $jwt = getJWToken($req->email, $req->pw, $no->no, JWT_SECRET_KEY);
                         $res->result->jwt = $jwt;

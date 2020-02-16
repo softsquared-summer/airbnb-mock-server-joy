@@ -20,12 +20,15 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('GET', '/test/{testNo}', ['IndexController', 'testDetail']);
     $r->addRoute('POST', '/test', ['IndexController', 'testPost']);
     $r->addRoute('GET', '/jwt', ['MainController', 'validateJwt']);
-    $r->addRoute('POST', '/jwt', ['MainController', 'createJwt']);
+    $r->addRoute('POST', '/jwt', ['MainController', 'createJwt']); // 로그인
 
     //------------------------------------------------------------------------------------------
 
-    $r->addRoute('GET', '/users/{userNo}', ['IndexController', 'userPage']); // 사용자 정보 조회
+    $r->addRoute('GET', '/users/{userNo}', ['IndexController', 'userSelect']); // 사용자 정보 조회
+    $r->addRoute('GET', '/users/{userNo}/profile', ['IndexController', 'profile']); // 사용자 프로필 조회
     $r->addRoute('POST', '/users', ['IndexController', 'userCreate']); // 사용자 추가
+    $r->addRoute('PUT', '/users/{userNo}', ['IndexController', 'userUpdate']); // 사용자 정보 수정
+    $r->addRoute('PUT', '/users/{userNo}/profile', ['IndexController', 'profileUpdate']); // 사용자 프로필 수정
 
 
 

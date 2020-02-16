@@ -3,13 +3,78 @@
 //READ
 
 //READ
-function userCreate($phone, $last_name, $first_name, $gender, $birthday, $email, $pw)
+
+
+function userSelect($no)
 {
     $pdo = pdoSqlConnect();
-    $query = "INSERT INTO user (no, phone, last_name, first_name, gender, birthday, email, pw) VALUES (null, ?, ?, ?, ?, ?, ?, ?);";
+    $query = "SELECT no, last_name, first_name, gender, birthday, email, phone FROM user WHERE no = ?;";
 
     $st = $pdo->prepare($query);
-    $st->execute([$phone, $last_name, $first_name, $gender, $birthday, $email, $pw]);
+    $st->execute([$no]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res[0];
+
+}
+
+function profile($no)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT no, info, location, school, job, language FROM user WHERE no = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$no]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res[0];
+
+}
+
+
+function userCreate($phone, $last_name, $first_name, $birthday, $email, $pw)
+{
+    $pdo = pdoSqlConnect();
+    $query = "INSERT INTO user (no, phone, last_name, first_name, birthday, email, pw, createdAt) VALUES (null, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$phone, $last_name, $first_name, $birthday, $email, $pw]);
+
+    $st = null;
+    $pdo = null;
+
+}
+
+function userUpdate($no, $phone, $last_name, $first_name, $gender, $birthday, $email)
+{
+    $pdo = pdoSqlConnect();
+    $query = "UPDATE user SET phone = ?, last_name = ?, first_name = ?, gender = ?, birthday = ?, email = ?, updatedAt = CURRENT_TIMESTAMP WHERE no = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$phone, $last_name, $first_name, $gender, $birthday, $email, $no]);
+
+    $st = null;
+    $pdo = null;
+
+}
+
+function profileUpdate($no, $image, $info, $location, $school, $job, $language)
+{
+    $pdo = pdoSqlConnect();
+    $query = "UPDATE user SET image = ?, info = ?, location = ?, school = ?, job = ?, language = ?, updatedAt = CURRENT_TIMESTAMP WHERE no = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$image, $info, $location, $school, $job, $language, $no]);
 
     $st = null;
     $pdo = null;
@@ -27,7 +92,7 @@ function isValidFirstname($_str)
 {
     $firstname = $_str;
 
-    return preg_match('/^[\x{AC00}-\x{D7A3}]{1,10}|[a-zA-Z]{2,10}$/', $firstname);
+    return preg_match('/^[\x{AC00}-\x{D7A3}]{1,10}|[a-zA-Z]{2,10}$/u', $firstname);
 }
 
 function isValidBirthday($_str)
@@ -79,7 +144,28 @@ function isValidPw($_str)
     return array(true);
 }
 
-function User($email)
+function isValidLocation($_str)
+{
+    $location = $_str;
+
+    return preg_match('/^[\x{AC00}-\x{D7A3}]|[a-zA-Z]$/u', $location);
+}
+
+function isValidSchool($_str)
+{
+    $school = $_str;
+
+    return preg_match('/^[\x{AC00}-\x{D7A3}]|[a-zA-Z]$/u', $school);
+}
+
+function isValidJob($_str)
+{
+    $job = $_str;
+
+    return preg_match('/^[\x{AC00}-\x{D7A3}]|[a-zA-Z]$/u', $job);
+}
+
+function UserNo($email)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT no FROM user where email = ?;";
@@ -96,7 +182,7 @@ function User($email)
     return $res[0];
 }
 
-function SearchUser($email)
+function userExist($email)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT EXISTS(SELECT * FROM user WHERE email = ?) AS exist;";
