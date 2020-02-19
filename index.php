@@ -29,6 +29,9 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('POST', '/users', ['IndexController', 'userCreate']); // 사용자 추가
     $r->addRoute('PUT', '/users/{userNo}', ['IndexController', 'userUpdate']); // 사용자 정보 수정
     $r->addRoute('PUT', '/users/{userNo}/profile', ['IndexController', 'profileUpdate']); // 사용자 프로필 수정
+    $r->addRoute('GET', '/houses', ['IndexController', 'houseSelect']); // 숙소 정보 조회
+    $r->addRoute('GET', '/houses/{houseNo}', ['IndexController', 'houseDetail']); // 숙소 상세 정보 조회
+    $r->addRoute('GET', '/houses/{houseNo}/review', ['IndexController', 'houseReview']); // 숙소 리뷰 정보 조회
 
 
 

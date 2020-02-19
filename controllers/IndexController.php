@@ -28,25 +28,6 @@ try {
          * 마지막 수정 날짜 : 19.04.29
          */
 
-
-        case "userSelect":
-            //header('Content-Type: text/html; charset=UTF-8');
-            http_response_code(200);
-            if (userSelect($vars["userNo"]) == null) {
-                $res->isSuccess = FALSE;
-                $res->code = 200;
-                $res->message = "사용자가 존재하지 않습니다.";
-                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-                break;
-            } else {
-                $res->result = userSelect($vars["userNo"]);
-                $res->isSuccess = TRUE;
-                $res->code = 100;
-                $res->message = "조회 성공";
-                echo json_encode($res, JSON_NUMERIC_CHECK);
-                break;
-            }
-
         /*
          * API No. 0
          * API Name : 테스트 Path Variable API
@@ -118,7 +99,33 @@ try {
             }
 
         /*
-         * API No. 2
+        * API No. 2
+        * API Name : userInfo API
+        * 마지막 수정 날짜 : 20.02.16
+        */
+
+        case "userSelect":
+            //header('Content-Type: text/html; charset=UTF-8');
+            http_response_code(200);
+            if (userSelect($vars["userNo"]) == null) {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "사용자가 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->result = userSelect($vars["userNo"]);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
+
+
+
+        /*
+         * API No. 3
          * API Name : userUpdate API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -181,7 +188,7 @@ try {
             }
 
         /*
-         * API No. 3
+         * API No. 4
          * API Name : Profile API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -204,7 +211,7 @@ try {
             }
 
         /*
-         * API No. 4
+         * API No. 5
          * API Name : ProfileUpdate API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -243,13 +250,62 @@ try {
                 break;
             }
 
+
         /*
-         * API No. 1
-         * API Name : Register API
+         * API No. 6
+         * API Name : houseDetail API
+         * 마지막 수정 날짜 : 20.02.18
+         */
+
+        case "houseDetail":
+            http_response_code(200);
+            $res->result->image = houseImage($vars["houseNo"]);
+            $res->result->info = houseInfo($vars["houseNo"]);
+            $tags = FacilitiesTag();
+            for ($i = 0; $i < count($tags); $i++) {
+                $tag = implode($tags[$i]);
+                $res->result->facility->$tag = houseFacilities($vars["houseNo"], $tag);
+            }
+            $res->result->room = houseRoom($vars["houseNo"]);
+            $res->result->host = houseHost($vars["houseNo"]);
+            $res->result->location = houseLocation($vars["houseNo"]);
+            $res->result->notice = houseNotice($vars["houseNo"]);
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "검색 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+
+        /*
+         * API No. 7
+         * API Name : houseReview API
          * 마지막 수정 날짜 : 20.02.16
          */
 
+        case "houseReview":
+            http_response_code(200);
+            $page = $_GET["page"];
+            $res->result->evaluation = houseEvaluation($vars["houseNo"]);
 
+            $res->result->reviews = houseReview($vars["houseNo"], $page);
+            $res->result->totalpage = reviewTotal($vars["houseNo"]);
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "검색 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+
+        /*
+         * API No. 8
+         * API Name : hostProfileUpdate API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+
+        /*
+         * API No. 5
+         * API Name : ProfileUpdate API
+         * 마지막 수정 날짜 : 20.02.16
+         */
     }
 } catch (\Exception $e) {
     return getSQLErrorException($errorLogs, $e, $req);
