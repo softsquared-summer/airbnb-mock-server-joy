@@ -222,7 +222,7 @@ function houseImage($houseNo)
     $query = "SELECT no,
        image,
        title
-FROM image WHERE no = ?;";
+FROM image WHERE houseNo = ?;";
 
     $st = $pdo->prepare($query);
     $st->execute([$houseNo]);
@@ -239,17 +239,17 @@ FROM image WHERE no = ?;";
 function houseInfo($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT name,
-       u.image,
-       u.last_name,
-       gu,
-       guest_cnt,
-       room,
-       bed,
-       bathroom,
-       h.info,
-       detail,
-       concat(h.check_in, ' - ', h.check_out) as checkin
+    $query = "SELECT h.name as houseTitle,
+       u.image as hostImage,
+       concat(gu, ', ', sido, ', ', country) as houseLocation,
+       concat('호스트: ', u.last_name, '님') as houseHost,
+       concat(h.building_type, '의 ', h.house_type) as houseType,
+       concat('인원 ', guest_cnt, '명 · 침실 ', room, '개 · 침대 ', bed, '개 · 공동 사용 욕실', bathroom,'개') as houseIn,
+       h.info as houseInfo,
+       detail as houseDetail,
+       h.stay_min as minimumStay,
+       h.check_in as checkIn,
+       h.check_out as checkOut
 FROM house h
 left outer join user u on h.userNo = u.no
 WHERE h.no = ?;";
@@ -364,7 +364,7 @@ function houseEvaluation($houseNo)
            end as star_value
     FROM house h
     left outer join (
-    SELECT rv.houseNo, count(*) as reviewcnt,  ROUND(avg(star), 2) as staravg
+    SELECT rv.houseNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
     FROM house_review r
     left outer join house_rv rv on r.house_rvNo = rv.no
     left outer join house h on rv.houseNo = h.no
@@ -434,7 +434,109 @@ function houseEvaluation($houseNo)
     return $res[0];
 }
 
-function houseReview($houseNo, $pageNo)
+//function houseReview($houseNo, $pageNo)
+//{
+//    $pdo = pdoSqlConnect();
+//    $query = "SELECT r.no,
+//       rv.userNo as guestNo,
+//       u.image as guestimg,
+//       u.last_name as guestname,
+//       concat(DATE_FORMAT(r.createdAt, '%Y'), '년', ' ', DATE_FORMAT(r.createdAt, '%m'), '월') as date,
+//       r.content as reviewcontent,
+//       h.userNo as hostNo,
+//       case when r.reply is null
+//           then null
+//           else host.image
+//           end as hostimg,
+//       case when r.reply is null
+//           then null
+//           else concat(host.last_name, '님의 답변:')
+//           end as hostname,
+//       case when r.reply is null
+//           then null
+//           else r.reply
+//           end as hostreply,
+//       case when r.reply is null
+//           then null
+//           else concat(DATE_FORMAT(r.replycreatedAt, '%Y'), '년', ' ', DATE_FORMAT(r.replycreatedAt, '%m'), '월')
+//           end as replydate
+//
+//
+//    FROM house_review r
+//    left outer join house_rv rv on r.house_rvNo = rv.no
+//    left outer join house h on rv.houseNo = h.no
+//    left outer join user u on rv.userNo = u.no
+//    left outer join (
+//    SELECT DISTINCT u.no, u.image, u.last_name
+//    FROM house h
+//    left outer join user u on h.userNo = u.no
+//           ) host on  h.userNo =  host.no
+//    where h.no = :houseNo
+//    order by r.createdAt LIMIT :startedAt,:size;";
+//
+//    $posts_num = 7;
+//
+//    // 전체 리뷰 수 구하기
+//    $sql = "SELECT count(*) as reviewcnt
+//    FROM house_review r
+//    left outer join house_rv rv on r.house_rvNo = rv.no
+//    left outer join house h on rv.houseNo = h.no
+//    where h.no = ?";
+//    $result = $pdo->prepare($sql);
+//    $result->execute([$houseNo]);
+//    $number_of_rows = $result->fetchColumn();
+//    $page_seq = $pageNo;
+//    if($pageNo == 1){
+//        $page_start = 0;
+//    } else {
+//        $page_start = $posts_num * $page_seq;
+//    }
+//
+//    //LIMIT 에 변수가 안들어가서 설정
+//    $pdo->setAttribute( PDO::ATTR_EMULATE_PREPARES, false );
+//
+//    $st = $pdo->prepare($query);
+//    $st -> bindParam(":houseNo", $houseNo);
+//    $st -> bindParam(":startedAt", $page_start);
+//    $st -> bindParam(":size", $posts_num);
+//    $st -> execute();
+//    //    $st->execute();
+//    $st->setFetchMode(PDO::FETCH_ASSOC);
+//    $res = $st->fetchAll();
+//
+//    $st = null;
+//    $pdo = null;
+//
+//    return $res;
+//}
+//
+//function totalPage($houseNo)
+//{
+//    $pdo = pdoSqlConnect();
+//    $query = "SELECT count(*) as reviewcnt
+//    FROM house_review r
+//    left outer join house_rv rv on r.house_rvNo = rv.no
+//    left outer join house h on rv.houseNo = h.no
+//    where h.no = ?";
+//
+//    $posts_num = 7;
+//
+//
+//    $st = $pdo->prepare($query);
+//    $st -> execute([$houseNo]);
+//    $number_of_rows = $st->fetchColumn();
+//    $total_page_num = ceil($number_of_rows/$posts_num);
+//    //    $st->execute();
+//    $st->setFetchMode(PDO::FETCH_ASSOC);
+//    $res = $st->fetchAll();
+//
+//    $st = null;
+//    $pdo = null;
+//
+//    return $total_page_num;
+//}
+
+function houseReview($houseNo)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT r.no,
@@ -444,67 +546,23 @@ function houseReview($houseNo, $pageNo)
        concat(DATE_FORMAT(r.createdAt, '%Y'), '년', ' ', DATE_FORMAT(r.createdAt, '%m'), '월') as date,
        r.content as reviewcontent,
        h.userNo as hostNo,
-       case when r.reply is null
-           then null
-           else host.image
-           end as hostimg,
-       case when r.reply is null
-           then null
-           else concat(host.last_name, '님의 답변:')
-           end as hostname,
-       case when r.reply is null
-           then null
-           else r.reply
-           end as hostreply,
-       case when r.reply is null
-           then null
-           else concat(DATE_FORMAT(r.replycreatedAt, '%Y'), '년', ' ', DATE_FORMAT(r.replycreatedAt, '%m'), '월')
-           end as replydate
+       case when r.reply is not null
+           then concat('호스트의 응답\r\n', r.reply)
+           end as hostreply
 
 
     FROM house_review r
     left outer join house_rv rv on r.house_rvNo = rv.no
     left outer join house h on rv.houseNo = h.no
     left outer join user u on rv.userNo = u.no
-    left outer join (
-    SELECT u.no, u.image, u.last_name
-    FROM user u
-    left outer join house h on u.no = h.userNo
-    where u.no = h.userNo
-           ) host on  h.userNo =  host.no
-    where h.no = :houseNo
-    order by r.createdAt LIMIT :startedAt,:size;";
-
-    $posts_num = 7;
-
-    // 전체 리뷰 수 구하기
-    $sql = "SELECT count(*) as reviewcnt
-    FROM house_review r
-    left outer join house_rv rv on r.house_rvNo = rv.no
-    left outer join house h on rv.houseNo = h.no
-    where h.no = ?";
-    $result = $pdo->prepare($sql);
-    $result->execute([$houseNo]);
-    $number_of_rows = $result->fetchColumn();
-    $page_seq = $pageNo;
-    if($pageNo == 1){
-        $page_start = 0;
-    } else {
-        $page_start = $posts_num * $page_seq;
-    }
-
-    //LIMIT 에 변수가 안들어가서 설정
-    $pdo->setAttribute( PDO::ATTR_EMULATE_PREPARES, false );
+    where h.no = ?
+    order by r.createdAt;";
 
     $st = $pdo->prepare($query);
-    $st -> bindParam(":houseNo", $houseNo);
-    $st -> bindParam(":startedAt", $page_start);
-    $st -> bindParam(":size", $posts_num);
-    $st -> execute();
+    $st -> execute([$houseNo]);
     //    $st->execute();
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();
-    $res->page = $total_page_num = ceil($number_of_rows/$posts_num);
 
     $st = null;
     $pdo = null;
@@ -512,68 +570,68 @@ function houseReview($houseNo, $pageNo)
     return $res;
 }
 
-function reviewTotal($houseNo)
-{
-    $pdo = pdoSqlConnect();
-    $query = "SELECT count(*) as reviewcnt
-    FROM house_review r
-    left outer join house_rv rv on r.house_rvNo = rv.no
-    left outer join house h on rv.houseNo = h.no
-    where h.no = ?";
+//function totalPage($houseNo)
+//{
+//    $pdo = pdoSqlConnect();
+//    $query = "SELECT count(*) as reviewcnt
+//    FROM house_review r
+//    left outer join house_rv rv on r.house_rvNo = rv.no
+//    left outer join house h on rv.houseNo = h.no
+//    where h.no = ?";
+//
+//    $posts_num = 7;
+//
+//
+//    $st = $pdo->prepare($query);
+//    $st -> execute([$houseNo]);
+//    $number_of_rows = $st->fetchColumn();
+//    $total_page_num = ceil($number_of_rows/$posts_num);
+//    //    $st->execute();
+//    $st->setFetchMode(PDO::FETCH_ASSOC);
+//    $res = $st->fetchAll();
+//
+//    $st = null;
+//    $pdo = null;
+//
+//    return $total_page_num;
+//}
 
-    $posts_num = 7;
-
-
-    $st = $pdo->prepare($query);
-    $st -> execute([$houseNo]);
-    $number_of_rows = $st->fetchColumn();
-    $total_page_num = ceil($number_of_rows/$posts_num);
-    //    $st->execute();
-    $st->setFetchMode(PDO::FETCH_ASSOC);
-    $res = $st->fetchAll();
-
-    $st = null;
-    $pdo = null;
-
-    return $total_page_num;
-}
-
-function houseHost($houseNo)
-{
-    $pdo = pdoSqlConnect();
-    $query = "SELECT u.no as hostNo,
-       u.image as hostImage,
-       u.last_name as hostName,
-       u.location as hostLocation,
-       concat(DATE_FORMAT(u.createdAt, '%Y'), '년', ' ', DATE_FORMAT(u.createdAt, '%m'), '월') as hostSingup,
-       case when hosthouse.totalreview is null
-           then concat(0, '개')
-           else concat('후기 ' , FORMAT( hosthouse.totalreview, 0 ), '개')
-           end as totalReview,
-       u.info as hostInfo,
-       h.contact as hostContact,
-       u.language as language
-FROM house h
-left outer join user u on h.userNo = u.no
-left outer join (SELECT h.userNo, COUNT(r.no) as totalreview
-FROM house h
-left outer join house_rv hr on h.no = hr.houseNo
-left outer join house_review r on hr.no = r.house_rvNo
-GROUP BY h.userNo
-    ) hosthouse on u.no = hosthouse.userNo
-WHERE h.no = ?;";
-
-    $st = $pdo->prepare($query);
-    $st->execute([$houseNo]);
-    //    $st->execute();
-    $st->setFetchMode(PDO::FETCH_ASSOC);
-    $res = $st->fetchAll();
-
-    $st = null;
-    $pdo = null;
-
-    return $res[0];
-}
+//function houseHost($houseNo)
+//{
+//    $pdo = pdoSqlConnect();
+//    $query = "SELECT u.no as hostNo,
+//       u.image as hostImage,
+//       u.last_name as hostName,
+//       u.location as hostLocation,
+//       concat(DATE_FORMAT(u.createdAt, '%Y'), '년', ' ', DATE_FORMAT(u.createdAt, '%m'), '월') as hostSingup,
+//       case when hosthouse.totalreview is null
+//           then concat(0, '개')
+//           else concat('후기 ' , FORMAT( hosthouse.totalreview, 0 ), '개')
+//           end as totalReview,
+//       u.info as hostInfo,
+//       h.contact as hostContact,
+//       u.language as language
+//FROM house h
+//left outer join user u on h.userNo = u.no
+//left outer join (SELECT h.userNo, COUNT(r.no) as totalreview
+//FROM house h
+//left outer join house_rv hr on h.no = hr.houseNo
+//left outer join house_review r on hr.no = r.house_rvNo
+//GROUP BY h.userNo
+//    ) hosthouse on u.no = hosthouse.userNo
+//WHERE h.no = ?;";
+//
+//    $st = $pdo->prepare($query);
+//    $st->execute([$houseNo]);
+//    //    $st->execute();
+//    $st->setFetchMode(PDO::FETCH_ASSOC);
+//    $res = $st->fetchAll();
+//
+//    $st = null;
+//    $pdo = null;
+//
+//    return $res[0];
+//}
 
 function houseLocation($houseNo)
 {
@@ -602,16 +660,223 @@ WHERE h.no = ?;";
 function houseNotice($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT r.no,
-       r.icon,
-       r.content,
-       r.detail,
-       r.tag
-FROM rule r
-WHERE r.houseNo = ?";
+    $query = "SELECT no as noticeNo,
+       content,
+       detail,
+       tag
+FROM rule 
+WHERE houseNo = ?;";
 
     $st = $pdo->prepare($query);
     $st->execute([$houseNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function houseSurcharge($houseNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT s.name as surchargeName,
+       case when s.detail is null
+           then concat('₩', hs.price)
+           else concat('₩', hs.price, ' ', s.detail)
+           end as surchargeDetail
+FROM house_surcharge hs
+left outer join surcharge s on hs.surchargeNo = s.no
+WHERE hs.houseNo = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$houseNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function experienceImage($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT no,
+       image,
+       title
+FROM image WHERE experienceNo = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function experienceInfo($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT e.no as experienceNo,
+       e.title as title,
+       concat(review.staravg, ' (', review.reviewcnt, ')') as evaluation,
+       concat(e.sido, ', ', e.country) as juso,
+       c.title as category,
+       concat(e.playtime, '시간') as playtime,
+       concat('최대 ', e.group_max, '명') as personnel,
+       offer.offeritems as inclusion,
+       e.language as offerLanguage,
+       e.info as program,
+       u.image as hostImage,
+       u.last_name as hostName,
+       e.introduce as hostIntroduce,
+       e.prerequisite as guestprerequistie
+FROM experience e
+left outer join user u on e.userNo = u.no
+left outer join category c on e.categoryNo = c.no
+left outer join (
+    SELECT experienceNo, group_concat(tag SEPARATOR ', ') as offeritems
+    FROM offeritem
+    group by experienceNo
+           ) offer on  e.no =  offer.experienceNo
+left outer join (
+    SELECT count(*) as reviewcnt, ROUND(avg(r.star), 2) as staravg
+    FROM experience_review r
+    left outer join experience_rv rv on r.experience_rvNo = rv.no
+    left outer join experience e on rv.experienceNo = e.no
+    group by rv.experienceNo
+           ) review on  e.no =  offer.experienceNo
+WHERE e.no = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res[0];
+}
+
+function experienceOffer($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT no as offeritemNo,
+       items,
+       content,
+       tag
+FROM offeritem
+WHERE experienceNo = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function experienceLocation($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT sido,
+       location_info as info,
+       location as meetLocation,
+       longitude,
+       latitude
+FROM experience
+WHERE no = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res[0];
+}
+
+function experienceReview($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT r.no,
+       rv.userNo as guestNo,
+       u.image as guestImg,
+       u.last_name as guestName,
+       concat(DATE_FORMAT(r.createdAt, '%Y'), '년', ' ', DATE_FORMAT(r.createdAt, '%m'), '월') as date,
+       r.star as reviewStar,
+       r.content as reviewContent,
+       case when r.reply is not null
+           then concat('호스트의 응답\r\n', r.reply)
+           end as hostReply
+
+
+    FROM experience_review r
+    left outer join experience_rv rv on r.experience_rvNo = rv.no
+    left outer join experience e on rv.experienceNo = e.no
+    left outer join user u on rv.userNo = u.no
+    left outer join (
+    SELECT DISTINCT u.no, u.image, u.last_name
+    FROM house h
+    left outer join user u on h.userNo = u.no
+           ) host on  e.userNo =  host.no
+    where e.no = ?
+    order by r.createdAt;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function experienceEvaluation($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT e.no as experienceNo,
+       case when total.staravg is null
+           then 0
+           else total.staravg
+           end as starAvg,
+       case when total.reviewcnt is null
+           then (0)
+           else concat('(', total.reviewcnt, ')')
+           end as reviewCnt
+    FROM experience e
+    left outer join (
+    SELECT rv.experienceNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
+    FROM experience_review r
+    left outer join experience_rv rv on r.experience_rvNo = rv.no
+    left outer join experience e on rv.experienceNo = e.no
+    group by rv.experienceNo
+           ) total on  e.no =  total.experienceNo
+    where e.no = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
     //    $st->execute();
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();

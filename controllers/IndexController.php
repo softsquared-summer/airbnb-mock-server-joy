@@ -267,9 +267,10 @@ try {
                 $res->result->facility->$tag = houseFacilities($vars["houseNo"], $tag);
             }
             $res->result->room = houseRoom($vars["houseNo"]);
-            $res->result->host = houseHost($vars["houseNo"]);
+//            $res->result->host = houseHost($vars["houseNo"]);
             $res->result->location = houseLocation($vars["houseNo"]);
             $res->result->notice = houseNotice($vars["houseNo"]);
+            $res->result->surcharge = houseSurcharge($vars["houseNo"]);
             $res->isSuccess = TRUE;
             $res->code = 100;
             $res->message = "검색 성공";
@@ -284,11 +285,12 @@ try {
 
         case "houseReview":
             http_response_code(200);
-            $page = $_GET["page"];
+//            $page = $_GET["page"];
             $res->result->evaluation = houseEvaluation($vars["houseNo"]);
+            $res->result->reviews = houseReview($vars["houseNo"]);
 
-            $res->result->reviews = houseReview($vars["houseNo"], $page);
-            $res->result->totalpage = reviewTotal($vars["houseNo"]);
+//            $res->result->reviews = houseReview($vars["houseNo"], $page);
+//            $res->result->totalpage = totalPage($vars["houseNo"]);
             $res->isSuccess = TRUE;
             $res->code = 100;
             $res->message = "검색 성공";
@@ -297,15 +299,37 @@ try {
 
         /*
          * API No. 8
-         * API Name : hostProfileUpdate API
+         * API Name : experienceDetail API
          * 마지막 수정 날짜 : 20.02.16
          */
 
+        case "experienceDetail":
+            http_response_code(200);
+            $res->result->image = experienceImage($vars["experienceNo"]);
+            $res->result->info = experienceInfo($vars["experienceNo"]);
+            $res->result->item = experienceOffer($vars["experienceNo"]);
+            $res->result->location = experienceLocation($vars["experienceNo"]);
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "검색 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+
         /*
-         * API No. 5
-         * API Name : ProfileUpdate API
+         * API No. 9
+         * API Name : experienceReview API
          * 마지막 수정 날짜 : 20.02.16
          */
+
+        case "experienceReview":
+            http_response_code(200);
+            $res->result->evaluation = experienceEvaluation($vars["experienceNo"]);
+            $res->result->reviews = experienceReview($vars["experienceNo"]);
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "검색 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
     }
 } catch (\Exception $e) {
     return getSQLErrorException($errorLogs, $e, $req);

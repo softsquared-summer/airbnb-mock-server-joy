@@ -32,6 +32,9 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('GET', '/houses', ['IndexController', 'houseSelect']); // 숙소 정보 조회
     $r->addRoute('GET', '/houses/{houseNo}', ['IndexController', 'houseDetail']); // 숙소 상세 정보 조회
     $r->addRoute('GET', '/houses/{houseNo}/review', ['IndexController', 'houseReview']); // 숙소 리뷰 정보 조회
+    $r->addRoute('GET', '/experiences', ['IndexController', 'experienceSelect']); // 체험 정보 조회
+    $r->addRoute('GET', '/experiences/{experienceNo}', ['IndexController', 'experienceDetail']); // 체험 상세 정보 조회
+    $r->addRoute('GET', '/experiences/{experienceNo}/review', ['IndexController', 'experienceReview']); // 체험 리뷰 정보 조회
 
 
 
