@@ -23,18 +23,19 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('POST', '/jwt', ['MainController', 'createJwt']); // 로그인
 
     //------------------------------------------------------------------------------------------
-
-    $r->addRoute('GET', '/users/{userNo}', ['IndexController', 'userSelect']); // 사용자 정보 조회
+    $r->addRoute('GET', '/users', ['IndexController', 'user']); // 사용자 정보 조회
+    $r->addRoute('GET', '/users/{userNo}', ['IndexController', 'userSelect']); // 사용자 정보 상세 조회
     $r->addRoute('GET', '/users/{userNo}/profile', ['IndexController', 'profile']); // 사용자 프로필 조회
     $r->addRoute('POST', '/users', ['IndexController', 'userCreate']); // 사용자 추가
     $r->addRoute('PUT', '/users/{userNo}', ['IndexController', 'userUpdate']); // 사용자 정보 수정
     $r->addRoute('PUT', '/users/{userNo}/profile', ['IndexController', 'profileUpdate']); // 사용자 프로필 수정
     $r->addRoute('GET', '/houses', ['IndexController', 'houseSelect']); // 숙소 정보 조회
     $r->addRoute('GET', '/houses/{houseNo}', ['IndexController', 'houseDetail']); // 숙소 상세 정보 조회
-    $r->addRoute('GET', '/houses/{houseNo}/review', ['IndexController', 'houseReview']); // 숙소 리뷰 정보 조회
+    $r->addRoute('GET', '/houses/{houseNo}/review', ['IndexController', 'houseReview']); // 숙소 후기 정보 조회
     $r->addRoute('GET', '/experiences', ['IndexController', 'experienceSelect']); // 체험 정보 조회
     $r->addRoute('GET', '/experiences/{experienceNo}', ['IndexController', 'experienceDetail']); // 체험 상세 정보 조회
-    $r->addRoute('GET', '/experiences/{experienceNo}/review', ['IndexController', 'experienceReview']); // 체험 리뷰 정보 조회
+    $r->addRoute('GET', '/experiences/{experienceNo}/review', ['IndexController', 'experienceReview']); // 체험 후기 정보 조회
+    $r->addRoute('GET', '/houses/{houseNo}/calendar', ['IndexController', 'houseReservation']); // 숙소 예약 캘린더 조회
 
 
 

@@ -33,6 +33,32 @@ try {
          * API Name : 테스트 Path Variable API
          * 마지막 수정 날짜 : 19.04.29
          */
+        case "user":
+            //header('Content-Type: text/html; charset=UTF-8');
+            http_response_code(200);
+            $phone = $_GET["phone"];
+            if(isValidPhone($phone)){
+                if (!phoneExist($phone)) {
+                    $res->isSuccess = TRUE;
+                    $res->code = 100;
+                    $res->message = "회원가입 가능";
+                    echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                    break;
+                } else {
+                    $res->isSuccess = TRUE;
+                    $res->code = 101;
+                    $res->message = "가입된 아이디가 존재합니다.";
+                    echo json_encode($res, JSON_NUMERIC_CHECK);
+                    break;
+                }
+
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "전화번호 양식에 맞게 다시 입력해주세요.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
+                break;
+            }
 
         /*
          * API No. 1
@@ -230,14 +256,14 @@ try {
                     } else {
                         $res->isSuccess = FALSE;
                         $res->code = 202;
-                        $res->message = "한글, 영어만 입력할 수 있습니다.";
+                        $res->message = "직업은 한글, 영어만 입력할 수 있습니다.";
                         echo json_encode($res, JSON_NUMERIC_CHECK);
                         break;
                     }
                 } else {
                     $res->isSuccess = FALSE;
                     $res->code = 201;
-                    $res->message = "한글, 영어만 입력할 수 있습니다.";
+                    $res->message = "학교는 한글, 영어만 입력할 수 있습니다.";
                     echo json_encode($res, JSON_NUMERIC_CHECK);
                     break;
                 }
@@ -245,7 +271,7 @@ try {
             } else {
                 $res->isSuccess = FALSE;
                 $res->code = 200;
-                $res->message = "한글, 영어만 입력할 수 있습니다.";
+                $res->message = "지역정보는 한글, 영어만 입력할 수 있습니다.";
                 echo json_encode($res, JSON_NUMERIC_CHECK);
                 break;
             }
@@ -259,23 +285,27 @@ try {
 
         case "houseDetail":
             http_response_code(200);
-            $res->result->image = houseImage($vars["houseNo"]);
-            $res->result->info = houseInfo($vars["houseNo"]);
-            $tags = FacilitiesTag();
-            for ($i = 0; $i < count($tags); $i++) {
-                $tag = implode($tags[$i]);
-                $res->result->facility->$tag = houseFacilities($vars["houseNo"], $tag);
-            }
-            $res->result->room = houseRoom($vars["houseNo"]);
+            if (houseExist($vars["houseNo"])) {
+                $res->result->image = houseImage($vars["houseNo"]);
+                $res->result->info = houseInfo($vars["houseNo"]);
+                $res->result->facility = houseFacilities($vars["houseNo"]);
+                $res->result->room = houseRoom($vars["houseNo"]);
 //            $res->result->host = houseHost($vars["houseNo"]);
-            $res->result->location = houseLocation($vars["houseNo"]);
-            $res->result->notice = houseNotice($vars["houseNo"]);
-            $res->result->surcharge = houseSurcharge($vars["houseNo"]);
-            $res->isSuccess = TRUE;
-            $res->code = 100;
-            $res->message = "검색 성공";
-            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-            break;
+                $res->result->location = houseLocation($vars["houseNo"]);
+                $res->result->notice = houseNotice($vars["houseNo"]);
+                $res->result->surcharge = houseSurcharge($vars["houseNo"]);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "숙소가 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
 
         /*
          * API No. 7
@@ -293,7 +323,7 @@ try {
 //            $res->result->totalpage = totalPage($vars["houseNo"]);
             $res->isSuccess = TRUE;
             $res->code = 100;
-            $res->message = "검색 성공";
+            $res->message = "조회 성공";
             echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
             break;
 
@@ -305,15 +335,23 @@ try {
 
         case "experienceDetail":
             http_response_code(200);
-            $res->result->image = experienceImage($vars["experienceNo"]);
-            $res->result->info = experienceInfo($vars["experienceNo"]);
-            $res->result->item = experienceOffer($vars["experienceNo"]);
-            $res->result->location = experienceLocation($vars["experienceNo"]);
-            $res->isSuccess = TRUE;
-            $res->code = 100;
-            $res->message = "검색 성공";
-            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-            break;
+            if (experienceExist($vars["experienceNo"])) {
+                $res->result->image = experienceImage($vars["experienceNo"]);
+                $res->result->info = experienceInfo($vars["experienceNo"]);
+                $res->result->item = experienceOffer($vars["experienceNo"]);
+                $res->result->location = experienceLocation($vars["experienceNo"]);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "체험이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
 
         /*
          * API No. 9
@@ -327,7 +365,49 @@ try {
             $res->result->reviews = experienceReview($vars["experienceNo"]);
             $res->isSuccess = TRUE;
             $res->code = 100;
-            $res->message = "검색 성공";
+            $res->message = "조회 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+        /*
+         * API No. 10
+         * API Name : houseCalendar API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "houseCalendar":
+            http_response_code(200);
+            $rv = houseCalendar($vars["houseNo"]);
+            $rv_list = array();
+            for ($i = 0; $i < count($rv); $i++) {
+                if(date_diff(array_values($rv[$i])[0], array_values($rv[$i])[1]) == 1){
+                    $rv_list += array_values($rv[$i])[0];
+                } else {
+                    $rv_list += dateGap(array_values($rv[$i])[0], date('Y-m-d', strtotime(array_values($rv[$i])[1] . ' -1 day')));
+                }
+            }
+            $Nreservation= implode( ',', $rv_list );
+            $res->result = $Nreservation;
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "조회 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+
+
+        /*
+         * API No. 11
+         * API Name : experienceReview API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "experienceSelect":
+            http_response_code(200);
+            $location = $_GET["location"];
+            $price = $_GET["price"];
+            $time = $_GET["time"];
+            $language = $_GET["language"];
+            $res->result = experienceSearch();
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "조회 성공";
             echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
             break;
     }

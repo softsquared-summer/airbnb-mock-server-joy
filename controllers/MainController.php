@@ -32,10 +32,10 @@ try {
             $userNo = $userInfo->no;
 
             http_response_code(200);
-            $res->result = $userNo;
+            $res->result->userNo = $userNo;
             $res->isSuccess = TRUE;
             $res->code = 100;
-            $res->message = "테스트 성공";
+            $res->message = "인증 성공";
 
             echo json_encode($res, JSON_NUMERIC_CHECK);
             break;

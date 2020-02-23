@@ -8,7 +8,7 @@
 function userSelect($no)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT no, last_name, first_name, gender, birthday, email, phone FROM user WHERE no = ?;";
+    $query = "SELECT no as userNo, last_name, first_name, gender, birthday, email, phone FROM user WHERE no = ?;";
 
     $st = $pdo->prepare($query);
     $st->execute([$no]);
@@ -26,7 +26,7 @@ function userSelect($no)
 function profile($no)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT no, info, location, school, job, language FROM user WHERE no = ?;";
+    $query = "SELECT no as userNo, info, location, school, job, language FROM user WHERE no = ?;";
 
     $st = $pdo->prepare($query);
     $st->execute([$no]);
@@ -111,7 +111,7 @@ function isValidEmail($_str)
 
 function isValidPhone($_str)
 {
-    $phone = $_str;
+    $phone = preg_replace('/^01([0|1|6|7|8|9]?)([0-9]{3,4})([0-9]{4})$/',"\\1-\\2-\\3" ,$_str);
 
     return preg_match('/^01([0|1|6|7|8|9]?)-?([0-9]{3,4})-?([0-9]{4})$/', $phone);
 }
@@ -196,6 +196,23 @@ function userExist($email)
 
 }
 
+function phoneExist($phone)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT EXISTS(SELECT * FROM user WHERE phone = ?) AS exist;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$phone]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}
+
 
 function isValidUser($id, $pw)
 {
@@ -216,13 +233,47 @@ function isValidUser($id, $pw)
 
 }
 
+function houseExist($houseNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT EXISTS(SELECT * FROM house WHERE no = ?) AS exist;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$houseNo]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}
+
+function experienceExist($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT EXISTS(SELECT * FROM experience WHERE no = ?) AS exist;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}
 function houseImage($houseNo)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT no,
        image,
-       title
-FROM image WHERE houseNo = ?;";
+       sequenceNo
+FROM image WHERE houseNo = ?
+order by sequenceNo;";
 
     $st = $pdo->prepare($query);
     $st->execute([$houseNo]);
@@ -239,15 +290,22 @@ FROM image WHERE houseNo = ?;";
 function houseInfo($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT h.name as houseTitle,
+    $query = "SELECT h.no as houseNo,
+       h.name as houseTitle,
        u.image as hostImage,
-       concat(gu, ', ', sido, ', ', country) as houseLocation,
+       case when h.dong is null
+           then concat(h.gu, ', ', h.sido, ', ', h.country)
+           else concat(h.dong, ', ', h.gu, ', ', h.sido, ', ', h.country)
+           end as houseLocation,
        concat('호스트: ', u.last_name, '님') as houseHost,
        concat(h.building_type, '의 ', h.house_type) as houseType,
        concat('인원 ', guest_cnt, '명 · 침실 ', room, '개 · 침대 ', bed, '개 · 공동 사용 욕실', bathroom,'개') as houseIn,
+       case when h.checkInMethod is not null
+           then concat('셀프 체크인\r\n',h.checkInMethod, '을 이용해 체크인하세요.')
+           end as houseCheckIn,
        h.info as houseInfo,
        detail as houseDetail,
-       h.stay_min as minimumStay,
+       concat('최소 숙박 가능일: ', h.stay_min) as minimumStay,
        h.check_in as checkIn,
        h.check_out as checkOut
 FROM house h
@@ -266,7 +324,7 @@ WHERE h.no = ?;";
     return $res[0];
 }
 
-function houseFacilities($houseNo, $tag)
+function houseFacilities($houseNo)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT hf.no,
@@ -278,24 +336,7 @@ left outer join (
     SELECT no, name, content, tag
     FROM facilities f
            ) f on f.no = hf.facilitiesNo
-WHERE hf.houseNo = ? && f.tag like ?;";
-
-    $st = $pdo->prepare($query);
-    $st->execute([$houseNo, $tag]);
-    //    $st->execute();
-    $st->setFetchMode(PDO::FETCH_ASSOC);
-    $res = $st->fetchAll();
-
-    $st = null;
-    $pdo = null;
-
-    return $res;
-}
-
-function houseRoom($houseNo)
-{
-    $pdo = pdoSqlConnect();
-    $query = "SELECT no, name, beds FROM room WHERE houseNo = ?;";
+WHERE hf.houseNo = ?;";
 
     $st = $pdo->prepare($query);
     $st->execute([$houseNo]);
@@ -309,13 +350,15 @@ function houseRoom($houseNo)
     return $res;
 }
 
-function FacilitiesTag()
+function houseRoom($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT tag FROM facilities GROUP BY tag;";
+    $query = "SELECT no,
+       concat(name,'\r\n',beds) as bedtype
+FROM room WHERE houseNo = ?;";
 
     $st = $pdo->prepare($query);
-    $st->execute([]);
+    $st->execute([$houseNo]);
     //    $st->execute();
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();
@@ -333,35 +376,35 @@ function houseEvaluation($houseNo)
        case when total.staravg is null
            then 0
            else total.staravg
-           end as star_total,
+           end as starAvg,
        case when total.reviewcnt is null
            then 0
-           else concat(total.reviewcnt, ' ', '후기')
-           end as reviewcnt,
+           else concat(total.reviewcnt, '개')
+           end as reviewCnt,
        case when checkin.staravg is null
            then 0
            else checkin.staravg
-           end as star_checkin,
+           end as starCheckin,
        case when com.staravg is null
            then 0
            else com.staravg
-           end as star_communication,
+           end as starCommunication,
        case when accuracy.staravg is null
            then 0
            else accuracy.staravg
-           end as star_accuracy,
+           end as starAccuracy,
        case when location.staravg is null
            then 0
            else location.staravg
-           end as star_location,
+           end as starLocation,
        case when clean.staravg is null
            then 0
            else clean.staravg
-           end as star_clean,
+           end as starClean,
        case when val.staravg is null
            then 0
            else val.staravg
-           end as star_value
+           end as starValue
     FROM house h
     left outer join (
     SELECT rv.houseNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
@@ -541,14 +584,14 @@ function houseReview($houseNo)
     $pdo = pdoSqlConnect();
     $query = "SELECT r.no,
        rv.userNo as guestNo,
-       u.image as guestimg,
-       u.last_name as guestname,
+       u.image as guestImg,
+       u.last_name as guestName,
        concat(DATE_FORMAT(r.createdAt, '%Y'), '년', ' ', DATE_FORMAT(r.createdAt, '%m'), '월') as date,
-       r.content as reviewcontent,
+       r.content as reviewContent,
        h.userNo as hostNo,
        case when r.reply is not null
            then concat('호스트의 응답\r\n', r.reply)
-           end as hostreply
+           end as hostReply
 
 
     FROM house_review r
@@ -636,7 +679,10 @@ function houseReview($houseNo)
 function houseLocation($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT concat(u.last_name, '님의 숙소는 ', h.gu, ',', h.sido, ',', h.country, '에 있습니다.') as location,
+    $query = "SELECT case when h.dong is null
+           then concat(u.last_name, '님의 숙소는 ', h.gu, ',', h.sido, ',', h.country, '에 있습니다.')
+           else concat(u.last_name, '님의 숙소는 ', h.dong, ',',  h.gu, ',', h.sido, ',', h.country, '에 있습니다.')
+           end as location,
        h.circumstance,
        h.transportation,
        h.longitude,
@@ -682,10 +728,11 @@ WHERE houseNo = ?;";
 function houseSurcharge($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT s.name as surchargeName,
-       case when s.detail is null
-           then concat('₩', hs.price)
-           else concat('₩', hs.price, ' ', s.detail)
+    $query = "SELECT hs.no as surchargeNo,
+       s.name as surchargeName,
+       case when hs.detail is null
+           then concat('₩', format(hs.price, 0))
+           else concat('₩', format(hs.price, 0), ' ', hs.detail)
            end as surchargeDetail
 FROM house_surcharge hs
 left outer join surcharge s on hs.surchargeNo = s.no
@@ -708,8 +755,9 @@ function experienceImage($experienceNo)
     $pdo = pdoSqlConnect();
     $query = "SELECT no,
        image,
-       title
-FROM image WHERE experienceNo = ?;";
+       sequenceNo
+FROM image WHERE experienceNo = ?
+order by sequenceNo;";
 
     $st = $pdo->prepare($query);
     $st->execute([$experienceNo]);
@@ -863,7 +911,7 @@ function experienceEvaluation($experienceNo)
            end as starAvg,
        case when total.reviewcnt is null
            then (0)
-           else concat('(', total.reviewcnt, ')')
+           else total.reviewcnt
            end as reviewCnt
     FROM experience e
     left outer join (
@@ -877,6 +925,98 @@ function experienceEvaluation($experienceNo)
 
     $st = $pdo->prepare($query);
     $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function houseCalendar($houseNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT check_in,
+       check_out
+FROM house_rv
+WHERE houseNo = ? && status = 2
+order by check_in;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$houseNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function dateGap($sdate,$edate){
+
+    $sdate = str_replace("-","",$sdate);
+
+    $edate = str_replace("-","",$edate);
+
+    for($i=$sdate;$i<=$edate;$i++){
+
+        $year       = substr($i,0,4);
+
+        $month = substr($i,4,2);
+
+        $day     = substr($i,6,2);
+
+        if(checkdate($month,$day,$year)){
+
+            $date[$year."-".$month."-".$day] = $year."-".$month."-".$day;
+
+        }
+
+    }
+
+    return $date;
+
+}
+
+function experienceSearch()
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT i.image as repImage,
+       c.title as categoryName,
+       e.title as experienceTitle,
+       concat('1인당 ₩', format(e.price_per_guest, 0), '부터') as price,
+       case when total.staravg is null
+           then 0
+           else total.staravg
+           end as starAvg,
+       case when total.reviewcnt is null
+           then (0)
+           else total.reviewCnt
+           end as reviewcnt,
+       concat(e.playtime, '시간 · ', offer.offeritems, ' 포함') as info
+FROM experience e
+    left outer join image i on e.no = i.experienceNo
+    left outer join category c on e.categoryNo = c.no
+    left outer join (
+    SELECT rv.experienceNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
+    FROM experience_review r
+    left outer join experience_rv rv on r.experience_rvNo = rv.no
+    left outer join experience e on rv.experienceNo = e.no
+    group by rv.experienceNo
+           ) total on  e.no =  total.experienceNo
+    left outer join (
+    SELECT experienceNo, group_concat(tag SEPARATOR ', ') as offeritems
+    FROM offeritem
+    group by experienceNo
+           ) offer on  e.no =  offer.experienceNo
+WHERE sequenceNo = 1;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([]);
     //    $st->execute();
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();
