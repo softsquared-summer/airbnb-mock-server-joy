@@ -51,21 +51,29 @@ try {
 
             if(isValidEmail($req->email)){
                 if ($isValidPw[0] != FALSE) {
-                    if(!isValidUser($req->email, $req->pw)){
-                        $res->isSuccess = FALSE;
-                        $res->code = 200;
-                        $res->message = "유효하지 않은 아이디 입니다";
-                        echo json_encode($res, JSON_NUMERIC_CHECK);
-                        return;
+                    if(userExist($req->email)) {
+                        if(!isValidUser($req->email, $req->pw)){
+                            $res->isSuccess = FALSE;
+                            $res->code = 200;
+                            $res->message = "비밀번호가 틀렸습니다.";
+                            echo json_encode($res, JSON_NUMERIC_CHECK);
+                            return;
+                        } else {
+                            //페이로드에 맞게 다시 설정 요함
+                            $json = json_encode(UserNo($req->email));
+                            $no = json_decode($json);
+                            $jwt = getJWToken($req->email, $req->pw, $no->no, JWT_SECRET_KEY);
+                            $res->result->jwt = $jwt;
+                            $res->isSuccess = TRUE;
+                            $res->code = 100;
+                            $res->message = "로그인 성공";
+                            echo json_encode($res, JSON_NUMERIC_CHECK);
+                            break;
+                        }
                     } else {
-                        //페이로드에 맞게 다시 설정 요함
-                        $json = json_encode(UserNo($req->email));
-                        $no = json_decode($json);
-                        $jwt = getJWToken($req->email, $req->pw, $no->no, JWT_SECRET_KEY);
-                        $res->result->jwt = $jwt;
-                        $res->isSuccess = TRUE;
-                        $res->code = 100;
-                        $res->message = "로그인 성공";
+                        $res->isSuccess = FALSE;
+                        $res->code = 202;
+                        $res->message = "아이디가 존재하지 않습니다.";
                         echo json_encode($res, JSON_NUMERIC_CHECK);
                         break;
                     }

@@ -68,13 +68,13 @@ try {
         case "userCreate":
             http_response_code(200);
             $isValidPw = isValidPw($req->pw);
-            if (isValidLastname($req->last_name)) {
-                if (isValidFirstname($req->first_name)) {
+            if (isValidFirstname($req->firstName)) {
+                if (isValidLastname($req->lastName)) {
                     if (isValidBirthday($req->birthday)) {
                         if (isValidEmail($req->email)) {
                             if (!userExist($req->email)) {
                                 if ($isValidPw[0] != FALSE) {
-                                    $res->result = userCreate($req->phone, $req->last_name, $req->first_name, $req->birthday, $req->email, $req->pw);
+                                    $res->result = userCreate($req->phone, $req->firstName, $req->lastName, $req->birthday, $req->email, $req->pw);
                                     $res->isSuccess = TRUE;
                                     $res->code = 100;
                                     $res->message = "회원가입 성공";
@@ -157,13 +157,13 @@ try {
          */
         case "userUpdate":
             http_response_code(200);
-            if (isValidLastname($req->last_name)) {
-                if (isValidFirstname($req->first_name)) {
+            if (isValidFirstname($req->firstName)) {
+                if (isValidLastname($req->lastName)) {
                     if (isValidBirthday($req->birthday)) {
                         if (isValidEmail($req->email)) {
                             if (!userExist($req->email)) {
                                 if(isValidPhone($req->phone)){
-                                    $res->result = userUpdate($req->no, $req->phone, $req->last_name, $req->first_name, $req->gender, $req->birthday, $req->email);
+                                    $res->result = userUpdate($req->no, $req->phone, $req->firstName, $req->lastName, $req->gender, $req->birthday, $req->email);
                                     $res->isSuccess = TRUE;
                                     $res->code = 100;
                                     $res->message = "수정 성공";
@@ -391,10 +391,42 @@ try {
             $res->message = "조회 성공";
             echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
             break;
-
-
         /*
          * API No. 11
+         * API Name : houseSearch API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "houseSearch":
+            http_response_code(200);
+            $search = $_GET["search"];
+            $guest = $_GET["guest"];
+            $houseType = $_GET["houseType"];
+            $bed = $_GET["bed"];
+            $room = $_GET["room"];
+            $bathroom = $_GET["bathroom"];
+            $facilities = $_GET["facilities"];
+            $buildingType = $_GET["buildingType"];
+            $rule = $_GET["rule"];
+            $location = $_GET["location"];
+            $language = $_GET["language"];
+            $houseSearch = houseSearch($search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $language);
+            if ($houseSearch) {
+                $res->result = $houseSearch;
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "검색조건에 맞는 숙소가 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
+        /*
+         * API No. 12
          * API Name : experienceReview API
          * 마지막 수정 날짜 : 20.02.16
          */

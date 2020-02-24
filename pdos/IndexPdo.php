@@ -8,7 +8,7 @@
 function userSelect($no)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT no as userNo, last_name, first_name, gender, birthday, email, phone FROM user WHERE no = ?;";
+    $query = "SELECT no as userNo, firstName, lastName, gender, birthday, email, phone FROM user WHERE no = ?;";
 
     $st = $pdo->prepare($query);
     $st->execute([$no]);
@@ -26,7 +26,16 @@ function userSelect($no)
 function profile($no)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT no as userNo, info, location, school, job, language FROM user WHERE no = ?;";
+    $query = "SELECT no as userNo,
+       firstName as firstName,
+       image,
+       info,
+       concat(DATE_FORMAT(createdAt, '%Y'), '년', ' ', DATE_FORMAT(createdAt, '%m'), '월') as createdDate,
+       location,
+       school,
+       job,
+       language
+FROM user WHERE no = ?;";
 
     $st = $pdo->prepare($query);
     $st->execute([$no]);
@@ -42,26 +51,26 @@ function profile($no)
 }
 
 
-function userCreate($phone, $last_name, $first_name, $birthday, $email, $pw)
+function userCreate($phone, $firstName, $lastName, $birthday, $email, $pw)
 {
     $pdo = pdoSqlConnect();
-    $query = "INSERT INTO user (no, phone, last_name, first_name, birthday, email, pw, createdAt) VALUES (null, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);";
+    $query = "INSERT INTO user (no, phone, firstName, lastName, birthday, email, pw, createdAt) VALUES (null, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);";
 
     $st = $pdo->prepare($query);
-    $st->execute([$phone, $last_name, $first_name, $birthday, $email, $pw]);
+    $st->execute([$phone, $firstName, $lastName, $birthday, $email, $pw]);
 
     $st = null;
     $pdo = null;
 
 }
 
-function userUpdate($no, $phone, $last_name, $first_name, $gender, $birthday, $email)
+function userUpdate($no, $phone, $firstName, $lastName, $gender, $birthday, $email)
 {
     $pdo = pdoSqlConnect();
-    $query = "UPDATE user SET phone = ?, last_name = ?, first_name = ?, gender = ?, birthday = ?, email = ?, updatedAt = CURRENT_TIMESTAMP WHERE no = ?;";
+    $query = "UPDATE user SET phone = ?, firstName = ?, lastName = ?, gender = ?, birthday = ?, email = ?, updatedAt = CURRENT_TIMESTAMP WHERE no = ?;";
 
     $st = $pdo->prepare($query);
-    $st->execute([$phone, $last_name, $first_name, $gender, $birthday, $email, $no]);
+    $st->execute([$phone, $firstName, $lastName, $gender, $birthday, $email, $no]);
 
     $st = null;
     $pdo = null;
@@ -297,9 +306,9 @@ function houseInfo($houseNo)
            then concat(h.gu, ', ', h.sido, ', ', h.country)
            else concat(h.dong, ', ', h.gu, ', ', h.sido, ', ', h.country)
            end as houseLocation,
-       concat('호스트: ', u.last_name, '님') as houseHost,
+       concat('호스트: ', u.firstName, '님') as houseHost,
        concat(h.building_type, '의 ', h.house_type) as houseType,
-       concat('인원 ', guest_cnt, '명 · 침실 ', room, '개 · 침대 ', bed, '개 · 공동 사용 욕실', bathroom,'개') as houseIn,
+       concat('인원 ', guest_cnt, '명 · 침실 ', room, '개 · 침대 ', bed, '개 · 공동 사용 욕실', bathroom,'개') as houseSummary,
        case when h.checkInMethod is not null
            then concat('셀프 체크인\r\n',h.checkInMethod, '을 이용해 체크인하세요.')
            end as houseCheckIn,
@@ -483,7 +492,7 @@ function houseEvaluation($houseNo)
 //    $query = "SELECT r.no,
 //       rv.userNo as guestNo,
 //       u.image as guestimg,
-//       u.last_name as guestname,
+//       u.lastName as guestname,
 //       concat(DATE_FORMAT(r.createdAt, '%Y'), '년', ' ', DATE_FORMAT(r.createdAt, '%m'), '월') as date,
 //       r.content as reviewcontent,
 //       h.userNo as hostNo,
@@ -493,7 +502,7 @@ function houseEvaluation($houseNo)
 //           end as hostimg,
 //       case when r.reply is null
 //           then null
-//           else concat(host.last_name, '님의 답변:')
+//           else concat(host.lastName, '님의 답변:')
 //           end as hostname,
 //       case when r.reply is null
 //           then null
@@ -510,7 +519,7 @@ function houseEvaluation($houseNo)
 //    left outer join house h on rv.houseNo = h.no
 //    left outer join user u on rv.userNo = u.no
 //    left outer join (
-//    SELECT DISTINCT u.no, u.image, u.last_name
+//    SELECT DISTINCT u.no, u.image, u.lastName
 //    FROM house h
 //    left outer join user u on h.userNo = u.no
 //           ) host on  h.userNo =  host.no
@@ -585,7 +594,7 @@ function houseReview($houseNo)
     $query = "SELECT r.no,
        rv.userNo as guestNo,
        u.image as guestImg,
-       u.last_name as guestName,
+       u.firstName as guestName,
        concat(DATE_FORMAT(r.createdAt, '%Y'), '년', ' ', DATE_FORMAT(r.createdAt, '%m'), '월') as date,
        r.content as reviewContent,
        h.userNo as hostNo,
@@ -644,7 +653,7 @@ function houseReview($houseNo)
 //    $pdo = pdoSqlConnect();
 //    $query = "SELECT u.no as hostNo,
 //       u.image as hostImage,
-//       u.last_name as hostName,
+//       u.lastName as hostName,
 //       u.location as hostLocation,
 //       concat(DATE_FORMAT(u.createdAt, '%Y'), '년', ' ', DATE_FORMAT(u.createdAt, '%m'), '월') as hostSingup,
 //       case when hosthouse.totalreview is null
@@ -680,8 +689,8 @@ function houseLocation($houseNo)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT case when h.dong is null
-           then concat(u.last_name, '님의 숙소는 ', h.gu, ',', h.sido, ',', h.country, '에 있습니다.')
-           else concat(u.last_name, '님의 숙소는 ', h.dong, ',',  h.gu, ',', h.sido, ',', h.country, '에 있습니다.')
+           then concat(u.firstName, '님의 숙소는 ', h.gu, ',', h.sido, ',', h.country, '에 있습니다.')
+           else concat(u.firstName, '님의 숙소는 ', h.dong, ',',  h.gu, ',', h.sido, ',', h.country, '에 있습니다.')
            end as location,
        h.circumstance,
        h.transportation,
@@ -785,7 +794,7 @@ function experienceInfo($experienceNo)
        e.language as offerLanguage,
        e.info as program,
        u.image as hostImage,
-       u.last_name as hostName,
+       u.firstName as hostName,
        e.introduce as hostIntroduce,
        e.prerequisite as guestprerequistie
 FROM experience e
@@ -868,7 +877,7 @@ function experienceReview($experienceNo)
     $query = "SELECT r.no,
        rv.userNo as guestNo,
        u.image as guestImg,
-       u.last_name as guestName,
+       u.firstName as guestName,
        concat(DATE_FORMAT(r.createdAt, '%Y'), '년', ' ', DATE_FORMAT(r.createdAt, '%m'), '월') as date,
        r.star as reviewStar,
        r.content as reviewContent,
@@ -882,9 +891,9 @@ function experienceReview($experienceNo)
     left outer join experience e on rv.experienceNo = e.no
     left outer join user u on rv.userNo = u.no
     left outer join (
-    SELECT DISTINCT u.no, u.image, u.last_name
-    FROM house h
-    left outer join user u on h.userNo = u.no
+    SELECT DISTINCT u.no, u.image, u.firstName
+    FROM experience e
+    left outer join user u on e.userNo = u.no
            ) host on  e.userNo =  host.no
     where e.no = ?
     order by r.createdAt;";
@@ -980,6 +989,79 @@ function dateGap($sdate,$edate){
 
     return $date;
 
+}
+
+function houseSearch($search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $language)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT DISTINCT h.no as houseNo,
+       case when house_type = '개인실'
+           then concat(h.house_type, ' · 침대 ', h.bed, '개')
+           when house_type = '호텔 객실'
+           then concat(h.house_type, ' · 침대 ', h.bed, '개')
+           when house_type = '다인실'
+           then concat(h.house_type, ' · 침대 ', h.bed, '개')
+           when house_type = '전체'
+           then concat(h.building_type, ' ', h.house_type, ' · 침대 ', h.bed, '개')
+           end as houseInfo,
+       case when review.staravg is null
+           then 0
+           else review.staravg
+           end as starAvg,
+       case when review.reviewCnt is null
+           then 0
+           else review.reviewCnt
+           end as reviewCnt,
+       h.name as houseName,
+       image.images as houseImages
+FROM house h
+left outer join (
+    SELECT i.houseNo,group_concat(i.image SEPARATOR ',') as images
+
+    FROM image i
+    left outer join house h on i.houseNo = h.no
+    group by houseNo
+
+    ) image on h.no = image.houseNo
+left outer join house_facilities hf on h.no = hf.houseNo
+left outer join facilities f on hf.facilitiesNo = f.no
+left outer join (SELECT r.houseNo, r.content
+    FROM house h
+    left outer join rule r on h.no = r.houseNo
+    ) rule on rule.houseNo = h.no
+left outer join (
+    SELECT u.no, u.image, u.firstName, u.language
+    FROM user u
+           ) host on  h.userNo =  host.no
+left outer join (
+    SELECT rv.houseNo, count(*) as reviewCnt, ROUND(avg(r.star), 1) as staravg
+    FROM house_review r
+    left outer join house_rv rv on r.house_rvNo = rv.no
+    left outer join house h on rv.houseNo = h.no
+    group by rv.houseNo
+           ) review on  h.no =  review.houseNo
+WHERE h.sido REGEXP concat('^', ?)
+  AND h.guest_cnt >= ?
+  AND h.house_type REGEXP concat('^', ?)
+  AND h.bathroom >= ?
+  AND h.bathroom >= ?
+  AND h.bathroom >= ?
+  AND f.name REGEXP concat('^', ?)
+  AND h.building_type REGEXP concat('^', ?)
+  AND rule.content NOT REGEXP concat('^', ?)
+  AND (h.gu REGEXP concat('^', ?) || h.dong REGEXP concat('^', ?))
+  AND host.language REGEXP concat('^', ?);";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $location, $language]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
 }
 
 function experienceSearch()
