@@ -32,10 +32,11 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('GET', '/houses', ['IndexController', 'houseSearch']); // 숙소 정보 조회 / 필터
     $r->addRoute('GET', '/houses/{houseNo}', ['IndexController', 'houseDetail']); // 숙소 상세 정보 조회
     $r->addRoute('GET', '/houses/{houseNo}/review', ['IndexController', 'houseReview']); // 숙소 후기 정보 조회
-    $r->addRoute('GET', '/experiences', ['IndexController', 'experienceSelect']); // 체험 정보 조회
+    $r->addRoute('GET', '/experiences', ['IndexController', 'experienceSearch']); // 체험 정보 조회
     $r->addRoute('GET', '/experiences/{experienceNo}', ['IndexController', 'experienceDetail']); // 체험 상세 정보 조회
     $r->addRoute('GET', '/experiences/{experienceNo}/review', ['IndexController', 'experienceReview']); // 체험 후기 정보 조회
     $r->addRoute('GET', '/houses/{houseNo}/calendar', ['IndexController', 'houseCalendar']); // 숙소 예약 캘린더 조회
+    $r->addRoute('GET', '/search', ['IndexController', 'searchList']); // 검색 가능 목록
 
 
 

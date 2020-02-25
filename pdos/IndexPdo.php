@@ -831,7 +831,6 @@ function experienceOffer($experienceNo)
     $pdo = pdoSqlConnect();
     $query = "SELECT no as offeritemNo,
        items,
-       content,
        tag
 FROM offeritem
 WHERE experienceNo = ?;";
@@ -853,7 +852,6 @@ function experienceLocation($experienceNo)
     $pdo = pdoSqlConnect();
     $query = "SELECT sido,
        location_info as info,
-       location as meetLocation,
        longitude,
        latitude
 FROM experience
@@ -1048,7 +1046,7 @@ WHERE h.sido REGEXP concat('^', ?)
   AND h.bathroom >= ?
   AND f.name REGEXP concat('^', ?)
   AND h.building_type REGEXP concat('^', ?)
-  AND rule.content NOT REGEXP concat('^', ?)
+  AND rule.content REGEXP concat('^', ?)
   AND (h.gu REGEXP concat('^', ?) || h.dong REGEXP concat('^', ?))
   AND host.language REGEXP concat('^', ?);";
 
@@ -1064,7 +1062,7 @@ WHERE h.sido REGEXP concat('^', ?)
     return $res;
 }
 
-function experienceSearch()
+function experienceSearch($search, $guest, $priceMin, $priceMax, $time, $language)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT i.image as repImage,
@@ -1095,10 +1093,72 @@ FROM experience e
     FROM offeritem
     group by experienceNo
            ) offer on  e.no =  offer.experienceNo
-WHERE sequenceNo = 1;";
+WHERE sequenceNo = 1
+  AND e.sido REGEXP concat('^', ?)
+  AND e.group_max >= ?
+  AND case when ? = 0 && ? = 0
+           then e.price_per_guest >= 0
+           when ? >= 0 && ? > 0
+           then e.price_per_guest between ? and ?
+           end
+  AND case when ? = 0
+           then e.start >= '00:00:00'
+           when ? = 1
+           then e.start < '12:00:00'
+           when ? = 2
+           then e.start >= '12:00:00'
+           when ? = 3
+           then e.start >= '00:00:00'
+           when ? = 4
+           then e.start >= '17:00:00'
+           when ? = 5
+           then e.start < '12:00:00' || e.start >= '17:00:00'
+           when ? = 6
+           then e.start >= '12:00:00'
+           when ? = 7
+           then e.start >= '00:00:00'
+           end
+  AND e.language REGEXP concat('^', ?);";
+    $st = $pdo->prepare($query);
+    $st->execute([$search, $guest, $priceMin, $priceMax, $priceMin, $priceMax, $priceMin, $priceMax, $time, $time, $time, $time, $time, $time, $time, $time, $language]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function houseList($search)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT DISTINCT sido as existLocation
+FROM house
+WHERE sido REGEXP concat('^',?);";
 
     $st = $pdo->prepare($query);
-    $st->execute([]);
+    $st->execute([$search]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function experienceList($search)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT DISTINCT sido as existLocation
+FROM experience
+WHERE sido REGEXP concat('^',?);";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$search]);
     //    $st->execute();
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();

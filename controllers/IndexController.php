@@ -427,21 +427,60 @@ try {
 
         /*
          * API No. 12
-         * API Name : experienceReview API
+         * API Name : experienceSearch API
          * 마지막 수정 날짜 : 20.02.16
          */
-        case "experienceSelect":
+        case "experienceSearch":
             http_response_code(200);
-            $location = $_GET["location"];
-            $price = $_GET["price"];
+            $search = $_GET["search"];
+            $guest = $_GET["guest"];
+            $priceMin = $_GET["priceMin"];
+            $priceMax = $_GET["priceMax"];
             $time = $_GET["time"];
             $language = $_GET["language"];
-            $res->result = experienceSearch();
-            $res->isSuccess = TRUE;
-            $res->code = 100;
-            $res->message = "조회 성공";
-            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-            break;
+            $experienceSearch = experienceSearch($search, $guest, $priceMin, $priceMax, $time, $language);
+            if ($experienceSearch) {
+                $res->result = $experienceSearch;
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "검색조건에 맞는 체험이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
+        /*
+         * API No. 13
+         * API Name : searchList API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "searchList":
+            http_response_code(200);
+            if ($category = $_GET["category"]) {
+                switch ($category) {
+                    case "house" :
+                        $search = $_GET["search"];
+                        $res->result = houseList($search);
+                        $res->isSuccess = TRUE;
+                        $res->code = 100;
+                        $res->message = "조회 성공";
+                        echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                        break;
+                    case "experience" :
+                        $search = $_GET["search"];
+                        $res->result = experienceList($search);
+                        $res->isSuccess = TRUE;
+                        $res->code = 100;
+                        $res->message = "조회 성공";
+                        echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                        break;
+                }
+            }
     }
 } catch (\Exception $e) {
     return getSQLErrorException($errorLogs, $e, $req);
