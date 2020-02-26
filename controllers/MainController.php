@@ -10,7 +10,7 @@ try {
     addAccessLogs($accessLogs, $req);
     switch ($handler) {
         /*
-         * API No. 0
+         * API No. 2
          * API Name : JWT 유효성 검사 테스트 API
          * 마지막 수정 날짜 : 19.04.25
          */

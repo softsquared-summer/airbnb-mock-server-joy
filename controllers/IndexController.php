@@ -33,35 +33,9 @@ try {
          * API Name : 테스트 Path Variable API
          * 마지막 수정 날짜 : 19.04.29
          */
-        case "user":
-            //header('Content-Type: text/html; charset=UTF-8');
-            http_response_code(200);
-            $phone = $_GET["phone"];
-            if(isValidPhone($phone)){
-                if (!phoneExist($phone)) {
-                    $res->isSuccess = TRUE;
-                    $res->code = 100;
-                    $res->message = "회원가입 가능";
-                    echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-                    break;
-                } else {
-                    $res->isSuccess = TRUE;
-                    $res->code = 101;
-                    $res->message = "가입된 아이디가 존재합니다.";
-                    echo json_encode($res, JSON_NUMERIC_CHECK);
-                    break;
-                }
-
-            } else {
-                $res->isSuccess = FALSE;
-                $res->code = 200;
-                $res->message = "전화번호 양식에 맞게 다시 입력해주세요.";
-                echo json_encode($res, JSON_NUMERIC_CHECK);
-                break;
-            }
 
         /*
-         * API No. 1
+         * API No. 3
          * API Name : Register API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -125,7 +99,7 @@ try {
             }
 
         /*
-        * API No. 2
+        * API No. 4
         * API Name : userInfo API
         * 마지막 수정 날짜 : 20.02.16
         */
@@ -149,9 +123,8 @@ try {
             }
 
 
-
         /*
-         * API No. 3
+         * API No. 5
          * API Name : userUpdate API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -162,7 +135,7 @@ try {
                     if (isValidBirthday($req->birthday)) {
                         if (isValidEmail($req->email)) {
                             if (!userExist($req->email)) {
-                                if(isValidPhone($req->phone)){
+                                if (isValidPhone($req->phone)) {
                                     $res->result = userUpdate($vars["userNo"], $req->phone, $req->firstName, $req->lastName, $req->gender, $req->birthday, $req->email);
                                     $res->isSuccess = TRUE;
                                     $res->code = 100;
@@ -214,7 +187,7 @@ try {
             }
 
         /*
-         * API No. 4
+         * API No. 6
          * API Name : Profile API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -237,7 +210,7 @@ try {
             }
 
         /*
-         * API No. 5
+         * API No. 7
          * API Name : ProfileUpdate API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -276,9 +249,43 @@ try {
                 break;
             }
 
+        /*
+         * API No. 8
+         * API Name : houseSearch API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "houseSearch":
+            http_response_code(200);
+            $userNo = $_GET["userNo"];
+            $search = $_GET["search"];
+            $guest = $_GET["guest"];
+            $houseType = $_GET["houseType"];
+            $bed = $_GET["bed"];
+            $room = $_GET["room"];
+            $bathroom = $_GET["bathroom"];
+            $facilities = $_GET["facilities"];
+            $buildingType = $_GET["buildingType"];
+            $rule = $_GET["rule"];
+            $location = $_GET["location"];
+            $language = $_GET["language"];
+            $houseSearch = houseSearch($userNo, $search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $language);
+            if ($houseSearch) {
+                $res->result = $houseSearch;
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "검색조건에 맞는 숙소가 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
 
         /*
-         * API No. 6
+         * API No. 9
          * API Name : houseDetail API
          * 마지막 수정 날짜 : 20.02.18
          */
@@ -308,7 +315,7 @@ try {
             }
 
         /*
-         * API No. 7
+         * API No. 10
          * API Name : houseReview API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -328,7 +335,37 @@ try {
             break;
 
         /*
-         * API No. 8
+         * API No. 11
+         * API Name : experienceSearch API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "experienceSearch":
+            http_response_code(200);
+            $userNo = $_GET["userNo"];
+            $search = $_GET["search"];
+            $guest = $_GET["guest"];
+            $priceMin = $_GET["priceMin"];
+            $priceMax = $_GET["priceMax"];
+            $time = $_GET["time"];
+            $language = $_GET["language"];
+            $experienceSearch = experienceSearch($userNo, $search, $guest, $priceMin, $priceMax, $time, $language);
+            if ($experienceSearch) {
+                $res->result = $experienceSearch;
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "검색조건에 맞는 체험이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
+        /*
+         * API No. 12
          * API Name : experienceDetail API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -354,7 +391,7 @@ try {
             }
 
         /*
-         * API No. 9
+         * API No. 13
          * API Name : experienceReview API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -369,7 +406,7 @@ try {
             echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
             break;
         /*
-         * API No. 10
+         * API No. 14
          * API Name : houseCalendar API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -378,84 +415,78 @@ try {
             $rv = houseCalendar($vars["houseNo"]);
             $rv_list = array();
             for ($i = 0; $i < count($rv); $i++) {
-                if(date_diff(array_values($rv[$i])[0], array_values($rv[$i])[1]) == 1){
+                if (date_diff(array_values($rv[$i])[0], array_values($rv[$i])[1]) == 1) {
                     $rv_list += array_values($rv[$i])[0];
                 } else {
                     $rv_list += dateGap(array_values($rv[$i])[0], date('Y-m-d', strtotime(array_values($rv[$i])[1] . ' -1 day')));
                 }
             }
-            $Nreservation= implode( ',', $rv_list );
+            $Nreservation = implode(',', $rv_list);
             $res->result = $Nreservation;
             $res->isSuccess = TRUE;
             $res->code = 100;
             $res->message = "조회 성공";
             echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
             break;
+
         /*
-         * API No. 11
-         * API Name : houseSearch API
+         * API No. 15
+         * API Name : experienceCalendar API
          * 마지막 수정 날짜 : 20.02.16
          */
-        case "houseSearch":
+
+        /*
+         * API No. 16
+         * API Name : experienceCalendar API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+
+        /*
+         * API No. 17
+         * API Name : experienceCalendar API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+
+        /*
+         * API No. 18
+         * API Name : experienceCalendar API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+
+        /*
+         * API No. 19
+         * API Name : userSearch API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "user":
+            //header('Content-Type: text/html; charset=UTF-8');
             http_response_code(200);
-            $search = $_GET["search"];
-            $guest = $_GET["guest"];
-            $houseType = $_GET["houseType"];
-            $bed = $_GET["bed"];
-            $room = $_GET["room"];
-            $bathroom = $_GET["bathroom"];
-            $facilities = $_GET["facilities"];
-            $buildingType = $_GET["buildingType"];
-            $rule = $_GET["rule"];
-            $location = $_GET["location"];
-            $language = $_GET["language"];
-            $houseSearch = houseSearch($search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $language);
-            if ($houseSearch) {
-                $res->result = $houseSearch;
-                $res->isSuccess = TRUE;
-                $res->code = 100;
-                $res->message = "조회 성공";
-                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-                break;
+            $phone = $_GET["phone"];
+            if (isValidPhone($phone)) {
+                if (!phoneExist($phone)) {
+                    $res->isSuccess = TRUE;
+                    $res->code = 100;
+                    $res->message = "회원가입 가능";
+                    echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                    break;
+                } else {
+                    $res->isSuccess = TRUE;
+                    $res->code = 101;
+                    $res->message = "가입된 아이디가 존재합니다.";
+                    echo json_encode($res, JSON_NUMERIC_CHECK);
+                    break;
+                }
+
             } else {
                 $res->isSuccess = FALSE;
                 $res->code = 200;
-                $res->message = "검색조건에 맞는 숙소가 존재하지 않습니다.";
-                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                $res->message = "전화번호 양식에 맞게 다시 입력해주세요.";
+                echo json_encode($res, JSON_NUMERIC_CHECK);
                 break;
             }
 
         /*
-         * API No. 12
-         * API Name : experienceSearch API
-         * 마지막 수정 날짜 : 20.02.16
-         */
-        case "experienceSearch":
-            http_response_code(200);
-            $search = $_GET["search"];
-            $guest = $_GET["guest"];
-            $priceMin = $_GET["priceMin"];
-            $priceMax = $_GET["priceMax"];
-            $time = $_GET["time"];
-            $language = $_GET["language"];
-            $experienceSearch = experienceSearch($search, $guest, $priceMin, $priceMax, $time, $language);
-            if ($experienceSearch) {
-                $res->result = $experienceSearch;
-                $res->isSuccess = TRUE;
-                $res->code = 100;
-                $res->message = "조회 성공";
-                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-                break;
-            } else {
-                $res->isSuccess = FALSE;
-                $res->code = 200;
-                $res->message = "검색조건에 맞는 체험이 존재하지 않습니다.";
-                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
-                break;
-            }
-
-        /*
-         * API No. 13
+         * API No. 20
          * API Name : searchList API
          * 마지막 수정 날짜 : 20.02.16
          */
@@ -465,7 +496,11 @@ try {
                 switch ($category) {
                     case "house" :
                         $search = $_GET["search"];
-                        $res->result = houseList($search);
+                        $result = houseList($search);;
+                        $json = json_encode($result);
+                        $object = json_decode($json);
+                        $results = explode( ',', $object->existLocation );
+                        $res->result = $results;
                         $res->isSuccess = TRUE;
                         $res->code = 100;
                         $res->message = "조회 성공";
@@ -473,7 +508,11 @@ try {
                         break;
                     case "experience" :
                         $search = $_GET["search"];
-                        $res->result = experienceList($search);
+                        $result = experienceList($search);
+                        $json = json_encode($result);
+                        $object = json_decode($json);
+                        $results = explode( ',', $object->existLocation );
+                        $res->result = $results;
                         $res->isSuccess = TRUE;
                         $res->code = 100;
                         $res->message = "조회 성공";
@@ -481,6 +520,119 @@ try {
                         break;
                 }
             }
+            break;
+        /*
+         * API No. 21
+         * API Name : createSaveList API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "createSaveList":
+            http_response_code(200);
+            if($req->houseNo == null && $req->experienceNo == null) {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "숙소 번호나 체험 번호가 필요합니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else if ($req->houseNo != null && $req->experienceNo != null) {
+                $res->isSuccess = FALSE;
+                $res->code = 201;
+                $res->message = "숙소 번호와 체험 번호중 하나만 입력해주세요.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->result = createSaveList($vars["userNo"], $req->houseNo, $req->experienceNo);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "저장 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
+
+        /*
+         * API No. 22
+         * API Name : selectSaveList API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "selectSaveList":
+            http_response_code(200);
+            if ($filter = $_GET["filter"]) {
+                switch ($filter) {
+                    case "simple" :
+                        $res->result = selectSaveList($vars["userNo"]);
+                        $res->isSuccess = TRUE;
+                        $res->code = 100;
+                        $res->message = "조회 성공";
+                        echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                        break;
+
+                    case "detail" :
+                        $saveLocation = $_GET["saveLocation"];
+                        $search = explode( ' ', $saveLocation );
+                        if($search[1] == "숙소") {
+                            $res->result = houseSaveList($vars["userNo"], $search[0]);
+                            $res->isSuccess = TRUE;
+                            $res->code = 100;
+                            $res->message = "조회 성공";
+                            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                            break;
+
+                        } else if ($search[1] == '체험') {
+                            $res->result = experienceSaveList($vars["userNo"], $search[0]);
+                            $res->isSuccess = TRUE;
+                            $res->code = 100;
+                            $res->message = "조회 성공";
+                            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                            break;
+                        } else {
+                            $res->isSuccess = FALSE;
+                            $res->code = 200;
+                            $res->message = "조회 실패";
+                            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                            break;
+                        }
+
+                }
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "조회 실패";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+            break;
+
+        /*
+         * API No. 23
+         * API Name : deleteSaveList API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "deleteSaveList":
+            http_response_code(200);
+            $houseNo = $_GET["houseNo"];
+            $experienceNo = $_GET["experienceNo"];
+            $res->result = deleteSaveList($vars["userNo"], $houseNo, $experienceNo);
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "삭제 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+
+        /*
+         * API No. 23
+         * API Name : deleteSaveList API
+         * 마지막 수정 날짜 : 20.02.16
+         */
+        case "houseImage":
+            http_response_code(200);
+            $res->result = houseImage($vars["houseNo"]);
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "조회 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+
     }
 } catch (\Exception $e) {
     return getSQLErrorException($errorLogs, $e, $req);
