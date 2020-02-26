@@ -163,7 +163,7 @@ try {
                         if (isValidEmail($req->email)) {
                             if (!userExist($req->email)) {
                                 if(isValidPhone($req->phone)){
-                                    $res->result = userUpdate($req->no, $req->phone, $req->firstName, $req->lastName, $req->gender, $req->birthday, $req->email);
+                                    $res->result = userUpdate($vars["userNo"], $req->phone, $req->firstName, $req->lastName, $req->gender, $req->birthday, $req->email);
                                     $res->isSuccess = TRUE;
                                     $res->code = 100;
                                     $res->message = "수정 성공";
@@ -247,7 +247,7 @@ try {
             if (isValidLocation($req->location)) {
                 if (isValidSchool($req->school)) {
                     if (isValidJob($req->job)) {
-                        $res->result = profileUpdate($req->no, $req->image, $req->info, $req->location, $req->school, $req->job, $req->language);
+                        $res->result = profileUpdate($vars["userNo"], $req->image, $req->info, $req->location, $req->school, $req->job, $req->language);
                         $res->isSuccess = TRUE;
                         $res->code = 100;
                         $res->message = "수정 성공";

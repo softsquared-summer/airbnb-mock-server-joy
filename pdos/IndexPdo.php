@@ -278,8 +278,12 @@ function experienceExist($experienceNo)
 function houseImage($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT no,
-       image,
+    $query = "SELECT no as imageNo,
+       image as imageUrl,
+       case when content is null
+           then ''
+           else content
+           end as imageContent,
        sequenceNo
 FROM image WHERE houseNo = ?
 order by sequenceNo;";
@@ -336,7 +340,7 @@ WHERE h.no = ?;";
 function houseFacilities($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT hf.no,
+    $query = "SELECT hf.no as facilitiseNo,
        f.name as facilitisename,
        f.content as facilitiseinfo,
        f.tag as facilitisekinds
@@ -362,8 +366,8 @@ WHERE hf.houseNo = ?;";
 function houseRoom($houseNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT no,
-       concat(name,'\r\n',beds) as bedtype
+    $query = "SELECT no as roomNo,
+       concat(name,'\r\n',beds) as bedType
 FROM room WHERE houseNo = ?;";
 
     $st = $pdo->prepare($query);
@@ -716,9 +720,12 @@ function houseNotice($houseNo)
 {
     $pdo = pdoSqlConnect();
     $query = "SELECT no as noticeNo,
-       content,
-       detail,
-       tag
+       content as noticeContent,
+       case when detail is null
+           then ''
+           else detail
+           end as noticeDetail,
+       tag as noticeTag
 FROM rule 
 WHERE houseNo = ?;";
 
@@ -762,8 +769,12 @@ WHERE hs.houseNo = ?;";
 function experienceImage($experienceNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT no,
-       image,
+    $query = "SELECT no as imageNo,
+       image as imageUrl,
+       case when content is null
+           then ''
+           else content
+           end as imageContent,
        sequenceNo
 FROM image WHERE experienceNo = ?
 order by sequenceNo;";
