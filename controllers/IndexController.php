@@ -462,6 +462,26 @@ try {
          * 마지막 수정 날짜 : 20.02.16
          */
 
+        case "reservationList":
+            http_response_code(200);
+            $reservationList = reservationList($vars["userNo"]);
+            $pastReservationList = pastReservationList($vars["userNo"]);
+            if($reservationList || $pastReservationList) {
+                $res->result->reservationList = reservationList($vars["userNo"]);
+                $res->result->pastReservationList = pastReservationList($vars["userNo"]);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "조회 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "예약 목록이 존재하지 않습니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
         /*
          * API No. 17
          * API Name : 숙소 예약 API
@@ -631,7 +651,7 @@ try {
         /*
          * API No. 20
          * API Name : 검색 목록 조회 API
-         * 마지막 수정 날짜 : 20.02.16
+         * 마지막 수정 날짜 : 20.02.25
          */
         case "searchList":
             http_response_code(200);
@@ -667,7 +687,7 @@ try {
         /*
          * API No. 21
          * API Name : 저장 목록 추가 API
-         * 마지막 수정 날짜 : 20.02.16
+         * 마지막 수정 날짜 : 20.02.27
          */
         case "createSaveList":
             http_response_code(200);
@@ -696,7 +716,7 @@ try {
         /*
          * API No. 22
          * API Name : 저장 목록 조회 API
-         * 마지막 수정 날짜 : 20.02.16
+         * 마지막 수정 날짜 : 20.02.27
          */
         case "selectSaveList":
             http_response_code(200);
@@ -756,7 +776,7 @@ try {
         /*
          * API No. 23
          * API Name : 저장 목록 삭제 API
-         * 마지막 수정 날짜 : 20.02.16
+         * 마지막 수정 날짜 : 20.02.29
          */
         case "deleteSaveList":
             http_response_code(200);
@@ -770,8 +790,38 @@ try {
             break;
 
         /*
-         * API No. 23
-         * API Name : deleteSaveList API
+         * API No. 24
+         * API Name : 사용자 예약 리뷰 추가 API
+         * 마지막 수정 날짜 : 20.02.29
+         */
+        case "createReview":
+            http_response_code(200);
+            if($req->category == '숙소') {
+                $res->result = createHouseReview($vars["reservationNo"], $req->content, $req->goodpoint, $req->star);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "리뷰 등록 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+
+            } else if ($req->category == '체험'){
+                $res->result = createExperienceReview($vars["reservationNo"], $req->content, $req->star);
+                $res->isSuccess = TRUE;
+                $res->code = 100;
+                $res->message = "리뷰 등록 성공";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 200;
+                $res->message = "리뷰 등록 실패";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
+        /*
+         * API No. 25
+         * API Name : 예약 알람 fcm API
          * 마지막 수정 날짜 : 20.02.16
          */
 

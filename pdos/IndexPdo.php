@@ -347,6 +347,32 @@ WHERE experienceNo = ? && eR.userNo = ? && date = ?) AS exist;";
     return intval($res[0]["exist"]);
 
 }
+
+function dateGap($sdate,$edate){
+
+    $sdate = str_replace("-","",$sdate);
+
+    $edate = str_replace("-","",$edate);
+
+    for($i=$sdate;$i<=$edate;$i++){
+
+        $year       = substr($i,0,4);
+
+        $month = substr($i,4,2);
+
+        $day     = substr($i,6,2);
+
+        if(checkdate($month,$day,$year)){
+
+            $date[$year."-".$month."-".$day] = $year."-".$month."-".$day;
+
+        }
+
+    }
+
+    return $date;
+
+}
 //function houseImage($houseNo)
 //{
 //    $pdo = pdoSqlConnect();
@@ -371,6 +397,83 @@ WHERE experienceNo = ? && eR.userNo = ? && date = ?) AS exist;";
 //
 //    return $res;
 //}
+
+function houseSearch($userNo, $search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $language)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT DISTINCT h.no as houseNo,
+       case when houseType = '개인실'
+           then concat(h.houseType, ' · 침대 ', h.bed, '개')
+           when houseType = '객실'
+           then concat(h.buildingType, ' ', h.houseType, ' · 침대 ', h.bed, '개')
+           when houseType = '다인실'
+           then concat(h.houseType, ' · 침대 ', h.bed, '개')
+           when houseType = '전체'
+           then concat(h.buildingType, ' ', h.houseType, ' · 침대 ', h.bed, '개')
+           end as houseInfo,
+       case when review.staravg is null
+           then 0
+           else review.staravg
+           end as starAvg,
+       case when review.reviewCnt is null
+           then 0
+           else review.reviewCnt
+           end as reviewCnt,
+       h.name as houseName,
+       image.images as houseImages,
+       case when EXISTS(SELECT no FROM saveList WHERE userNo = ? && houseNo = h.no)
+           then 1
+           else 0
+           end as isSave
+FROM house h
+left outer join (
+    SELECT i.houseNo, group_concat(i.image) as images
+
+    FROM image i
+    left outer join house h on i.houseNo = h.no
+    group by houseNo
+
+    ) image on h.no = image.houseNo
+left outer join houseFacilities hf on h.no = hf.houseNo
+left outer join facilities f on hf.facilitiesNo = f.no
+left outer join (SELECT r.houseNo, r.content
+    FROM house h
+    left outer join rule r on h.no = r.houseNo
+    ) rule on rule.houseNo = h.no
+left outer join (
+    SELECT u.no, u.image, u.firstName, u.language
+    FROM user u
+           ) host on  h.userNo =  host.no
+left outer join (
+    SELECT rv.houseNo, count(*) as reviewCnt, ROUND(avg(r.star), 1) as staravg
+    FROM houseReview r
+    left outer join houseRv rv on r.houseRvNo = rv.no
+    left outer join house h on rv.houseNo = h.no
+    group by rv.houseNo
+           ) review on  h.no =  review.houseNo
+WHERE h.sido REGEXP concat('^', ?)
+  AND h.guestCnt >= ?
+  AND h.houseType REGEXP concat('^', ?)
+  AND h.bed >= ?
+  AND h.room >= ?
+  AND h.bathroom >= ?
+  AND f.name REGEXP concat('^', ?)
+  AND h.buildingType REGEXP concat('^', ?)
+  AND rule.content REGEXP concat('^', ?)
+  AND (h.gu REGEXP concat('^', ?) || h.dong REGEXP concat('^', ?))
+  AND host.language REGEXP concat('^', ?);";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$userNo, $search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $location, $language]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
 
 function houseImage($houseNo)
 {
@@ -883,6 +986,80 @@ WHERE hs.houseNo = ?;";
 //    return $res;
 //}
 
+function experienceSearch($userNo, $search, $guest, $priceMin, $priceMax, $time, $language)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT DISTINCT e.no as experienceNo,
+       i.image as repImage,
+       c.title as categoryName,
+       e.title as experienceTitle,
+       concat('1인당 ₩', format(e.pricePerGuest, 0), '부터') as experiencePrice,
+       case when total.staravg is null
+           then 0
+           else total.staravg
+           end as starAvg,
+       case when total.reviewcnt is null
+           then (0)
+           else total.reviewCnt
+           end as reviewcnt,
+       concat(e.playtime, '시간 · ', offer.offeritems, ' 포함') as experienceInfo,
+       case when EXISTS(SELECT no FROM saveList WHERE userNo = ? && experienceNo = e.no)
+           then 1
+           else 0
+           end as isSave
+FROM experience e
+    left outer join image i on e.no = i.experienceNo
+    left outer join category c on e.categoryNo = c.no
+    left outer join (
+    SELECT rv.experienceNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
+    FROM experienceReview r
+    left outer join experienceRv rv on r.experienceRvNo = rv.no
+    left outer join experience e on rv.experienceNo = e.no
+    group by rv.experienceNo
+           ) total on  e.no =  total.experienceNo
+    left outer join (
+    SELECT experienceNo, group_concat(tag SEPARATOR ', ') as offeritems
+    FROM offeritem
+    group by experienceNo
+           ) offer on  e.no =  offer.experienceNo
+WHERE sequenceNo = 1 && tag = 'host'
+  AND e.sido REGEXP concat('^', ?)
+  AND e.groupMax >= ?
+  AND case when ? = 0 && ? = 0
+           then e.pricePerGuest >= 0
+           when ? >= 0 && ? > 0
+           then e.pricePerGuest between ? and ?
+           end
+  AND case when ? = 0
+           then e.start >= '00:00:00'
+           when ? = 1
+           then e.start < '12:00:00'
+           when ? = 2
+           then e.start >= '12:00:00'
+           when ? = 3
+           then e.start >= '00:00:00'
+           when ? = 4
+           then e.start >= '17:00:00'
+           when ? = 5
+           then e.start < '12:00:00' || e.start >= '17:00:00'
+           when ? = 6
+           then e.start >= '12:00:00'
+           when ? = 7
+           then e.start >= '00:00:00'
+           end
+  AND e.language REGEXP concat('^', ?);";
+    $st = $pdo->prepare($query);
+    $st->execute([$userNo, $search, $guest, $priceMin, $priceMax, $priceMin, $priceMax, $priceMin, $priceMax, $time, $time, $time, $time, $time, $time, $time, $time, $language]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
 function experienceImage($experienceNo)
 {
     $pdo = pdoSqlConnect();
@@ -1085,32 +1262,6 @@ order by checkIn;";
     return $res;
 }
 
-function dateGap($sdate,$edate){
-
-    $sdate = str_replace("-","",$sdate);
-
-    $edate = str_replace("-","",$edate);
-
-    for($i=$sdate;$i<=$edate;$i++){
-
-        $year       = substr($i,0,4);
-
-        $month = substr($i,4,2);
-
-        $day     = substr($i,6,2);
-
-        if(checkdate($month,$day,$year)){
-
-            $date[$year."-".$month."-".$day] = $year."-".$month."-".$day;
-
-        }
-
-    }
-
-    return $date;
-
-}
-
 function houseReservation($userNo, $houseNo, $checkIn, $checkOut, $guestCnt, $totalPrice)
 {
     $pdo = pdoSqlConnect();
@@ -1222,73 +1373,51 @@ function experienceReservation($userNo, $experienceNo, $date, $guestCnt, $totalP
     }
 }
 
-function houseSearch($userNo, $search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $language)
+function reservationList($userNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT DISTINCT h.no as houseNo,
-       case when houseType = '개인실'
-           then concat(h.houseType, ' · 침대 ', h.bed, '개')
-           when houseType = '객실'
-           then concat(h.buildingType, ' ', h.houseType, ' · 침대 ', h.bed, '개')
-           when houseType = '다인실'
-           then concat(h.houseType, ' · 침대 ', h.bed, '개')
-           when houseType = '전체'
-           then concat(h.buildingType, ' ', h.houseType, ' · 침대 ', h.bed, '개')
-           end as houseInfo,
-       case when review.staravg is null
-           then 0
-           else review.staravg
-           end as starAvg,
-       case when review.reviewCnt is null
-           then 0
-           else review.reviewCnt
-           end as reviewCnt,
-       h.name as houseName,
-       image.images as houseImages,
-       case when EXISTS(SELECT no FROM saveList WHERE userNo = ? && houseNo = h.no)
-           then 1
-           else 0
-           end as isSave
-FROM house h
-left outer join (
-    SELECT i.houseNo, group_concat(i.image) as images
-
-    FROM image i
-    left outer join house h on i.houseNo = h.no
-    group by houseNo
-
-    ) image on h.no = image.houseNo
-left outer join houseFacilities hf on h.no = hf.houseNo
-left outer join facilities f on hf.facilitiesNo = f.no
-left outer join (SELECT r.houseNo, r.content
-    FROM house h
-    left outer join rule r on h.no = r.houseNo
-    ) rule on rule.houseNo = h.no
-left outer join (
-    SELECT u.no, u.image, u.firstName, u.language
-    FROM user u
-           ) host on  h.userNo =  host.no
-left outer join (
-    SELECT rv.houseNo, count(*) as reviewCnt, ROUND(avg(r.star), 1) as staravg
-    FROM houseReview r
-    left outer join houseRv rv on r.houseRvNo = rv.no
-    left outer join house h on rv.houseNo = h.no
-    group by rv.houseNo
-           ) review on  h.no =  review.houseNo
-WHERE h.sido REGEXP concat('^', ?)
-  AND h.guestCnt >= ?
-  AND h.houseType REGEXP concat('^', ?)
-  AND h.bed >= ?
-  AND h.room >= ?
-  AND h.bathroom >= ?
-  AND f.name REGEXP concat('^', ?)
-  AND h.buildingType REGEXP concat('^', ?)
-  AND rule.content REGEXP concat('^', ?)
-  AND (h.gu REGEXP concat('^', ?) || h.dong REGEXP concat('^', ?))
-  AND host.language REGEXP concat('^', ?);";
+    $query = "SELECT eR.no as reservationNo,
+       e.no as no,
+       '체험' as category,
+       u.image as hostImage,
+       e.sido as location,
+       e.title as name,
+       eR.guestCnt as guestCnt,
+       image.imageUrl,
+       concat(DATE_FORMAT(eR.date, '%Y'), '년 ', DATE_FORMAT(eR.date, '%c'), '월 ', DATE_FORMAT(eR.date, '%e'), '일')
+           as date,
+       eR.createdAt
+FROM experienceRv eR
+left outer join experience e on eR.experienceNo = e.no
+left outer join user u on e.userNo = u.no
+left outer join (SELECT experienceNo, SUBSTRING_INDEX(group_concat(image), ',', 1) as imageUrl
+FROM image
+group by experienceNo) image on e.no = image.experienceNo
+WHERE eR.userNo =? && eR.status =1
+UNION ALL
+SELECT hR.no as reservationNo,
+       h.no as no,
+       '숙소' as category,
+       u.image as hostImage,
+       concat(h.sido, ' ', h.gu) as location,
+       h.name as name ,
+       hR.guestCnt as guestCnt,
+       image.imageUrl,
+       concat(DATE_FORMAT(hR.checkIn, '%Y'), '년 ', DATE_FORMAT(hR.checkIn, '%c'), '월 ', DATE_FORMAT(hR.checkIn, '%e'), '일', ' ~ ',
+           DATE_FORMAT(hR.checkOut, '%Y'), '년 ', DATE_FORMAT(hR.checkOut, '%c'), '월 ', DATE_FORMAT(hR.checkOut, '%e'), '일')
+           as date,
+       hR.createdAt
+FROM houseRv hR
+left outer join house h on hR.houseNo = h.no
+left outer join user u on h.userNo = u.no
+left outer join (SELECT houseNo, SUBSTRING_INDEX(group_concat(image), ',', 1) as imageUrl
+FROM image
+group by houseNo) image on h.no = image.houseNo
+WHERE hR.userNo =? && hR.status =1
+ORDER BY createdAt";
 
     $st = $pdo->prepare($query);
-    $st->execute([$userNo, $search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $location, $language]);
+    $st->execute([$userNo, $userNo]);
     //    $st->execute();
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();
@@ -1299,70 +1428,51 @@ WHERE h.sido REGEXP concat('^', ?)
     return $res;
 }
 
-function experienceSearch($userNo, $search, $guest, $priceMin, $priceMax, $time, $language)
+function pastReservationList($userNo)
 {
     $pdo = pdoSqlConnect();
-    $query = "SELECT DISTINCT e.no as experienceNo,
-       i.image as repImage,
-       c.title as categoryName,
-       e.title as experienceTitle,
-       concat('1인당 ₩', format(e.pricePerGuest, 0), '부터') as experiencePrice,
-       case when total.staravg is null
-           then 0
-           else total.staravg
-           end as starAvg,
-       case when total.reviewcnt is null
-           then (0)
-           else total.reviewCnt
-           end as reviewcnt,
-       concat(e.playtime, '시간 · ', offer.offeritems, ' 포함') as experienceInfo,
-       case when EXISTS(SELECT no FROM saveList WHERE userNo = ? && experienceNo = e.no)
-           then 1
-           else 0
-           end as isSave
-FROM experience e
-    left outer join image i on e.no = i.experienceNo
-    left outer join category c on e.categoryNo = c.no
-    left outer join (
-    SELECT rv.experienceNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
-    FROM experienceReview r
-    left outer join experienceRv rv on r.experienceRvNo = rv.no
-    left outer join experience e on rv.experienceNo = e.no
-    group by rv.experienceNo
-           ) total on  e.no =  total.experienceNo
-    left outer join (
-    SELECT experienceNo, group_concat(tag SEPARATOR ', ') as offeritems
-    FROM offeritem
-    group by experienceNo
-           ) offer on  e.no =  offer.experienceNo
-WHERE sequenceNo = 1 && tag = 'host'
-  AND e.sido REGEXP concat('^', ?)
-  AND e.groupMax >= ?
-  AND case when ? = 0 && ? = 0
-           then e.pricePerGuest >= 0
-           when ? >= 0 && ? > 0
-           then e.pricePerGuest between ? and ?
-           end
-  AND case when ? = 0
-           then e.start >= '00:00:00'
-           when ? = 1
-           then e.start < '12:00:00'
-           when ? = 2
-           then e.start >= '12:00:00'
-           when ? = 3
-           then e.start >= '00:00:00'
-           when ? = 4
-           then e.start >= '17:00:00'
-           when ? = 5
-           then e.start < '12:00:00' || e.start >= '17:00:00'
-           when ? = 6
-           then e.start >= '12:00:00'
-           when ? = 7
-           then e.start >= '00:00:00'
-           end
-  AND e.language REGEXP concat('^', ?);";
+    $query = "SELECT eR.no as reservationNo,
+       e.no as no,
+       '체험' as category,
+       u.image as hostImage,
+       e.sido as location,
+       e.title as name,
+       eR.guestCnt as guestCnt,
+       image.imageUrl,
+       concat(DATE_FORMAT(eR.date, '%Y'), '년 ', DATE_FORMAT(eR.date, '%c'), '월 ', DATE_FORMAT(eR.date, '%e'), '일')
+           as date,
+       eR.createdAt
+FROM experienceRv eR
+left outer join experience e on eR.experienceNo = e.no
+left outer join user u on e.userNo = u.no
+left outer join (SELECT experienceNo, SUBSTRING_INDEX(group_concat(image), ',', 1) as imageUrl
+FROM image
+group by experienceNo) image on e.no = image.experienceNo
+WHERE eR.userNo =? && eR.status =2
+UNION ALL
+SELECT hR.no as reservationNo,
+       h.no as no,
+       '숙소' as category,
+       u.image as hostImage,
+       concat(h.sido, ' ', h.gu) as location,
+       h.name as name ,
+       hR.guestCnt as guestCnt,
+       image.imageUrl,
+       concat(DATE_FORMAT(hR.checkIn, '%Y'), '년 ', DATE_FORMAT(hR.checkIn, '%c'), '월 ', DATE_FORMAT(hR.checkIn, '%e'), '일', ' ~ ',
+           DATE_FORMAT(hR.checkOut, '%Y'), '년 ', DATE_FORMAT(hR.checkOut, '%c'), '월 ', DATE_FORMAT(hR.checkOut, '%e'), '일')
+           as date,
+       hR.createdAt
+FROM houseRv hR
+left outer join house h on hR.houseNo = h.no
+left outer join user u on h.userNo = u.no
+left outer join (SELECT houseNo, SUBSTRING_INDEX(group_concat(image), ',', 1) as imageUrl
+FROM image
+group by houseNo) image on h.no = image.houseNo
+WHERE hR.userNo =? && hR.status =2
+ORDER BY createdAt";
+
     $st = $pdo->prepare($query);
-    $st->execute([$userNo, $search, $guest, $priceMin, $priceMax, $priceMin, $priceMax, $priceMin, $priceMax, $time, $time, $time, $time, $time, $time, $time, $time, $language]);
+    $st->execute([$userNo, $userNo]);
     //    $st->execute();
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();
@@ -1411,6 +1521,7 @@ WHERE sido REGEXP concat('^',?);";
     return $res[0];
 }
 
+
 function createSaveList($userNo, $houseNo, $experienceNo)
 {
     $pdo = pdoSqlConnect();
@@ -1422,6 +1533,7 @@ function createSaveList($userNo, $houseNo, $experienceNo)
     $st = null;
     $pdo = null;
 }
+
 
 function selectSaveList($userNo)
 {
@@ -1449,6 +1561,7 @@ group by saveLocation;";
 
     return $res;
 }
+
 
 function houseSaveList($userNo, $location)
 {
@@ -1519,6 +1632,60 @@ WHERE h.sido REGEXP concat('^', ?)
     return $res;
 }
 
+
+function experienceSaveList($userNo, $location)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT e.no as experienceNo,
+       i.image as repImage,
+       c.title as categoryName,
+       e.title as experienceTitle,
+       concat('1인당 ₩', format(e.pricePerGuest, 0), '부터') as experiencePrice,
+       case when total.staravg is null
+           then 0
+           else total.staravg
+           end as starAvg,
+       case when total.reviewcnt is null
+           then (0)
+           else total.reviewCnt
+           end as reviewcnt,
+       concat(e.playtime, '시간 · ', offer.offeritems, ' 포함') as experienceInfo,
+       case when EXISTS(SELECT no FROM saveList WHERE userNo = ? && experienceNo = e.no)
+           then 1
+           else 0
+           end as isSave
+FROM experience e
+    left outer join image i on e.no = i.experienceNo
+    left outer join category c on e.categoryNo = c.no
+    left outer join (
+    SELECT rv.experienceNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
+    FROM experienceReview r
+    left outer join experienceRv rv on r.experienceRvNo = rv.no
+    left outer join experience e on rv.experienceNo = e.no
+    group by rv.experienceNo
+           ) total on  e.no =  total.experienceNo
+    left outer join (
+    SELECT experienceNo, group_concat(tag SEPARATOR ', ') as offeritems
+    FROM offeritem
+    group by experienceNo
+           ) offer on  e.no =  offer.experienceNo
+WHERE sequenceNo = 1
+  AND e.sido REGEXP concat('^', ?)
+  AND EXISTS(SELECT no FROM saveList WHERE userNo = ? && experienceNo = e.no);";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$userNo, $location, $userNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+
 function allSaveList($userNo)
 {
     $pdo = pdoSqlConnect();
@@ -1588,57 +1755,7 @@ WHERE h.sido REGEXP concat('^')
     return $res;
 }
 
-function experienceSaveList($userNo, $location)
-{
-    $pdo = pdoSqlConnect();
-    $query = "SELECT e.no as experienceNo,
-       i.image as repImage,
-       c.title as categoryName,
-       e.title as experienceTitle,
-       concat('1인당 ₩', format(e.pricePerGuest, 0), '부터') as experiencePrice,
-       case when total.staravg is null
-           then 0
-           else total.staravg
-           end as starAvg,
-       case when total.reviewcnt is null
-           then (0)
-           else total.reviewCnt
-           end as reviewcnt,
-       concat(e.playtime, '시간 · ', offer.offeritems, ' 포함') as experienceInfo,
-       case when EXISTS(SELECT no FROM saveList WHERE userNo = ? && experienceNo = e.no)
-           then 1
-           else 0
-           end as isSave
-FROM experience e
-    left outer join image i on e.no = i.experienceNo
-    left outer join category c on e.categoryNo = c.no
-    left outer join (
-    SELECT rv.experienceNo, count(*) as reviewcnt, ROUND(avg(star), 2) as staravg
-    FROM experienceReview r
-    left outer join experienceRv rv on r.experienceRvNo = rv.no
-    left outer join experience e on rv.experienceNo = e.no
-    group by rv.experienceNo
-           ) total on  e.no =  total.experienceNo
-    left outer join (
-    SELECT experienceNo, group_concat(tag SEPARATOR ', ') as offeritems
-    FROM offeritem
-    group by experienceNo
-           ) offer on  e.no =  offer.experienceNo
-WHERE sequenceNo = 1
-  AND e.sido REGEXP concat('^', ?)
-  AND EXISTS(SELECT no FROM saveList WHERE userNo = ? && experienceNo = e.no);";
 
-    $st = $pdo->prepare($query);
-    $st->execute([$userNo, $location, $userNo]);
-    //    $st->execute();
-    $st->setFetchMode(PDO::FETCH_ASSOC);
-    $res = $st->fetchAll();
-
-    $st = null;
-    $pdo = null;
-
-    return $res;
-}
 
 function deleteSaveList($userNo, $houseNo, $experienceNo)
 {
@@ -1650,6 +1767,32 @@ function deleteSaveList($userNo, $houseNo, $experienceNo)
 
     $st = null;
     $pdo = null;
+}
+
+function createHouseReview($reservationNo, $content, $goodpoint, $star)
+{
+    $pdo = pdoSqlConnect();
+    $query = "INSERT INTO houseReview (no, houseRvNo, content, goodpoint, star, createdAt) VALUES (null, ?, ?, ?, ?, CURRENT_TIMESTAMP);";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$reservationNo, $content, $goodpoint, $star]);
+
+    $st = null;
+    $pdo = null;
+
+}
+
+function createExperienceReview($reservationNo, $content, $star)
+{
+    $pdo = pdoSqlConnect();
+    $query = "INSERT INTO experienceReview (no, experienceRvNo, content, star, createdAt) VALUES (null, ?, ?, ?, CURRENT_TIMESTAMP);";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$reservationNo, $content, $star]);
+
+    $st = null;
+    $pdo = null;
+
 }
 
 function getFcmToken()

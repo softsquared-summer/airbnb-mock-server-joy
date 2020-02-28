@@ -44,7 +44,7 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('POST', '/users/{userNo}/saveList', ['IndexController', 'createSaveList']); // 저장 목록 추가
     $r->addRoute('GET', '/users/{userNo}/saveList', ['IndexController', 'selectSaveList']); // 저장 목록 조회
     $r->addRoute('DELETE', '/users/{userNo}/saveList', ['IndexController', 'deleteSaveList']); // 저장 목록 삭제
-
+    $r->addRoute('POST', '/users/{userNo}/reservations/{reservationNo}/review', ['IndexController', 'createReview']); // 사용자 예약 리뷰 추가
     $r->addRoute('GET', '/fcm', ['IndexController', 'fcm']); // 예약 알람 fcm API
 
 
