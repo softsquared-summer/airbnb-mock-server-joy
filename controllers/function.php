@@ -28,23 +28,21 @@ function isValidHeader($jwt, $key)
     }
 }
 
-function sendFcm($fcmToken, $data, $key, $deviceType)
+function sendFcm($fcmToken, $data)
 {
     $url = 'https://fcm.googleapis.com/fcm/send';
 
     $headers = array(
-        'Authorization: key=' . $key,
+        'Authorization: key=' . 'AAAAcXRtS2c:APA91bE_tByQzJXaZ3vgpUh8TMAfywkJ9GrRTP2e-hMIj4uLq04WK_b_M5uRzY4jWkfOhi0GTH2S9tJhXRKAnyAQzThsiQWa-geX6hRJuuEIFwBoBoYs5cu0xzy8Xs9YGINqPmdU3LtE',
         'Content-Type: application/json'
     );
 
     $fields['data'] = $data;
 
-    if ($deviceType == 'IOS') {
         $notification['title'] = $data['title'];
         $notification['body'] = $data['body'];
         $notification['sound'] = 'default';
         $fields['notification'] = $notification;
-    }
 
     $fields['to'] = $fcmToken;
     $fields['content_available'] = true;

@@ -41,7 +41,7 @@ try {
             break;
         /*
          * API No. 1
-         * API Name : JWT 생성 테스트 API (로그인)
+         * API Name : JWT 생성 API (로그인)
          * 마지막 수정 날짜 : 19.04.25
          */
         case "createJwt":

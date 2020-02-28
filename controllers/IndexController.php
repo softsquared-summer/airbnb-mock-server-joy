@@ -36,7 +36,7 @@ try {
 
         /*
          * API No. 3
-         * API Name : Register API
+         * API Name : 회원가입 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "userCreate":
@@ -100,7 +100,7 @@ try {
 
         /*
         * API No. 4
-        * API Name : userInfo API
+        * API Name : 유저 상세 정보 조회 API
         * 마지막 수정 날짜 : 20.02.16
         */
 
@@ -125,7 +125,7 @@ try {
 
         /*
          * API No. 5
-         * API Name : userUpdate API
+         * API Name : 유저 상세 정보 수정 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "userUpdate":
@@ -188,7 +188,7 @@ try {
 
         /*
          * API No. 6
-         * API Name : Profile API
+         * API Name : 유저 프로필 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
@@ -211,7 +211,7 @@ try {
 
         /*
          * API No. 7
-         * API Name : ProfileUpdate API
+         * API Name : 유저 프로필 수정 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
@@ -251,7 +251,7 @@ try {
 
         /*
          * API No. 8
-         * API Name : houseSearch API
+         * API Name : 숙소 정보 조회 / 필터 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "houseSearch":
@@ -286,7 +286,7 @@ try {
 
         /*
          * API No. 9
-         * API Name : houseDetail API
+         * API Name : 숙소 상세 정보 조회 API
          * 마지막 수정 날짜 : 20.02.18
          */
 
@@ -316,7 +316,7 @@ try {
 
         /*
          * API No. 10
-         * API Name : houseReview API
+         * API Name : 숙소 후기 정보 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
@@ -336,7 +336,7 @@ try {
 
         /*
          * API No. 11
-         * API Name : experienceSearch API
+         * API Name : 체험 정보 조회 / 필터 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "experienceSearch":
@@ -366,7 +366,7 @@ try {
 
         /*
          * API No. 12
-         * API Name : experienceDetail API
+         * API Name : 체험 상세 정보 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
@@ -392,7 +392,7 @@ try {
 
         /*
          * API No. 13
-         * API Name : experienceReview API
+         * API Name : 체험 후기 정보 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
@@ -407,7 +407,7 @@ try {
             break;
         /*
          * API No. 14
-         * API Name : houseCalendar API
+         * API Name : 숙소 예약 캘린더 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "houseCalendar":
@@ -431,31 +431,97 @@ try {
 
         /*
          * API No. 15
-         * API Name : experienceCalendar API
+         * API Name : 체험 예약 캘린더 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
         /*
          * API No. 16
-         * API Name : experienceCalendar API
+         * API Name : 사용자 예약 목록 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
         /*
          * API No. 17
-         * API Name : experienceCalendar API
+         * API Name : 숙소 예약 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
+        case "houseReservation":
+            http_response_code(200);
+            $rv = houseCalendar($vars["houseNo"]);
+            $json = json_encode(houseHost($vars["houseNo"]));
+            $host = json_decode($json);
+            $host->hostNo;
+            if($req->userNo != $host->hostNo){
+                if(isValidDate($req->checkIn)) {
+                    if(isValidDate($req->checkOut)){
+                        if(isValidGuest($req->guestCnt)) {
+                            $rv_list = array();
+                            for ($i = 0; $i < count($rv); $i++) {
+                                if (date_diff(array_values($rv[$i])[0], array_values($rv[$i])[1]) == 1) {
+                                    $rv_list += array_values($rv[$i])[0];
+                                } else {
+                                    $rv_list += dateGap(array_values($rv[$i])[0], date('Y-m-d', strtotime(array_values($rv[$i])[1] . ' -1 day')));
+                                }
+                            }
+                            $rv_date = dateGap($req->checkIn, date('Y-m-d', strtotime($req->checkOut . ' -1 day')));
+                            if(array_intersect($rv_list, $rv_date)){
+                                $res->isSuccess = FALSE;
+                                $res->code = 200;
+                                $res->message = "예약 불가능한 날짜 입니다.";
+                                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                                break;
+                            } else {
+                                $res->result = houseReservation($req->userNo, $vars["houseNo"], $req->checkIn, $req->checkOut, $req->guestCnt, $req->totalPrice);
+                                $res->isSuccess = TRUE;
+                                $res->code = 100;
+                                $res->message = "예약 성공";
+                                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                                break;
+                            }
+
+                        } else {
+                            $res->isSuccess = FALSE;
+                            $res->code = 204;
+                            $res->message = "게스트 수는 1명 이상이 필요합니다.";
+                            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                            break;
+                        }
+
+                    } else {
+                        $res->isSuccess = FALSE;
+                        $res->code = 203;
+                        $res->message = "체크아웃 날짜를 날짜 형식으로 입력해주세요.";
+                        echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                        break;
+                    }
+
+                } else {
+                    $res->isSuccess = FALSE;
+                    $res->code = 202;
+                    $res->message = "체크인 날짜를 날짜 형식으로 입력해주세요.";
+                    echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                    break;
+                }
+
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 201;
+                $res->message = "호스트는 예약이 불가능합니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
         /*
          * API No. 18
-         * API Name : experienceCalendar API
+         * API Name : 체험 예약 API
          * 마지막 수정 날짜 : 20.02.16
          */
 
         /*
          * API No. 19
-         * API Name : userSearch API
+         * API Name : 유저 정보 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "user":
@@ -487,7 +553,7 @@ try {
 
         /*
          * API No. 20
-         * API Name : searchList API
+         * API Name : 검색 목록 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "searchList":
@@ -523,7 +589,7 @@ try {
             break;
         /*
          * API No. 21
-         * API Name : createSaveList API
+         * API Name : 저장 목록 추가 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "createSaveList":
@@ -552,7 +618,7 @@ try {
 
         /*
          * API No. 22
-         * API Name : selectSaveList API
+         * API Name : 저장 목록 조회 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "selectSaveList":
@@ -585,6 +651,13 @@ try {
                             $res->message = "조회 성공";
                             echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
                             break;
+                        } else if ($saveLocation == '') {
+                            $res->result = allSaveList($vars["userNo"], $search[0]);
+                            $res->isSuccess = TRUE;
+                            $res->code = 100;
+                            $res->message = "조회 성공";
+                            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                            break;
                         } else {
                             $res->isSuccess = FALSE;
                             $res->code = 200;
@@ -605,7 +678,7 @@ try {
 
         /*
          * API No. 23
-         * API Name : deleteSaveList API
+         * API Name : 저장 목록 삭제 API
          * 마지막 수정 날짜 : 20.02.16
          */
         case "deleteSaveList":
@@ -624,9 +697,15 @@ try {
          * API Name : deleteSaveList API
          * 마지막 수정 날짜 : 20.02.16
          */
-        case "houseImage":
+
+        case "fcm":
             http_response_code(200);
-            $res->result = houseImage($vars["houseNo"]);
+            $fcmRes=json_decode(json_encode(getFcmToken()));
+            $cnt = count(getFcmToken());
+            for($i=0;$i<=$cnt;$i++){
+                $res->result = fcmSend($fcmRes[$i]->fcmToken);
+            }
+            //$res->result = fcmSend('cferhGt65vA:APA91bGtgP2D7gI4-Uzt6KYuVbet8vSbINUZl3ozdKrIR9ObFjw9JSV-cRqd44D7WOja--l_ki6Xs6m3mxgZEAMCjYSg4J3CE5Ozpl3Zrr2JSTtADpKA8lA6xy6BtJQAT25I_beUB3fY');
             $res->isSuccess = TRUE;
             $res->code = 100;
             $res->message = "조회 성공";
