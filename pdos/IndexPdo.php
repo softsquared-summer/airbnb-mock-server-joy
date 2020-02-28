@@ -109,6 +109,25 @@ FROM house WHERE no = ?;";
 
 }
 
+function experienceHost($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT userNo as hostNo
+FROM experience WHERE no = ?;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res[0];
+
+}
+
 function isValidLastname($_str)
 {
     $lastname = $_str;
@@ -299,6 +318,26 @@ function experienceExist($experienceNo)
 
     $st = $pdo->prepare($query);
     $st->execute([$experienceNo]);
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return intval($res[0]["exist"]);
+
+}
+
+function experienceReservationExist($experienceNo, $userNo, $date)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT EXISTS(SELECT eR.userNo
+    FROM experienceRv eR
+left outer join experience e on eR.experienceNo = e.no
+WHERE experienceNo = ? && eR.userNo = ? && date = ?) AS exist;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo, $userNo, $date]);
     $st->setFetchMode(PDO::FETCH_ASSOC);
     $res = $st->fetchAll();
 
@@ -1082,6 +1121,105 @@ function houseReservation($userNo, $houseNo, $checkIn, $checkOut, $guestCnt, $to
 
     $st = null;
     $pdo = null;
+}
+
+function notAvailableExperience($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT date
+    FROM experienceRv eR
+left outer join experience e on eR.experienceNo = e.no
+WHERE experienceNo = ? && status = 1
+group by date, groupMax
+having SUM(guestCnt) = groupMax;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function availableExperience($experienceNo)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT SUM(guestCnt) as totalGuestCnt, date, e.groupMax
+    FROM experienceRv eR
+left outer join experience e on eR.experienceNo = e.no
+WHERE experienceNo = ? && status = 1
+group by date, groupMax
+having totalGuestCnt < groupMax;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res;
+}
+
+function experienceGuestCnt($experienceNo, $date)
+{
+    $pdo = pdoSqlConnect();
+    $query = "SELECT SUM(guestCnt) as totalGuestCnt, groupMax
+    FROM experienceRv eR
+left outer join experience e on eR.experienceNo = e.no
+WHERE experienceNo = ? && date = ?
+group by date;";
+
+    $st = $pdo->prepare($query);
+    $st->execute([$experienceNo, $date]);
+    //    $st->execute();
+    $st->setFetchMode(PDO::FETCH_ASSOC);
+    $res = $st->fetchAll();
+
+    $st = null;
+    $pdo = null;
+
+    return $res[0];
+}
+
+function experienceReservation($userNo, $experienceNo, $date, $guestCnt, $totalPrice, $guest)
+{
+    $pdo = pdoSqlConnect();
+
+    try{
+
+        $pdo->beginTransaction();
+
+        $query = "INSERT INTO experienceRv (no, userNo, experienceNo, date, guestCnt, totalPrice, createdAt) VALUES (null, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);";
+        $st = $pdo->prepare($query);
+        $st->execute([$userNo, $experienceNo, $date, $guestCnt, $totalPrice]);
+        $last_id = $pdo->lastInsertId();
+
+
+        for ($i = 0; $i < count($guest); $i++) {
+            $query = "INSERT INTO experienceGuest (no, experienceRvNo, lastName, firstName, email, createdAt) VALUES (null, ?, ?, ?, ?, CURRENT_TIMESTAMP);";
+            $st = $pdo->prepare($query);
+            $st->execute([$last_id, $guest[$i]->lastName, $guest[$i]->firstName, $guest[$i]->email]);
+        }
+
+        $pdo->commit();
+
+    }
+//Our catch block will handle any exceptions that are thrown.
+    catch(Exception $e){
+        //An exception has occured, which means that one of our database queries
+        //failed.
+        //Print out the error message.
+        //echo $e->getMessage();
+        //Rollback the transaction.
+        $pdo->rollBack();
+    }
 }
 
 function houseSearch($userNo, $search, $guest, $houseType, $bed, $room, $bathroom, $facilities, $buildingType, $rule, $location, $language)

@@ -36,7 +36,10 @@ $dispatcher = FastRoute\simpleDispatcher(function (FastRoute\RouteCollector $r) 
     $r->addRoute('GET', '/experiences/{experienceNo}', ['IndexController', 'experienceDetail']); // 체험 상세 정보 조회
     $r->addRoute('GET', '/experiences/{experienceNo}/review', ['IndexController', 'experienceReview']); // 체험 후기 정보 조회
     $r->addRoute('GET', '/houses/{houseNo}/calendar', ['IndexController', 'houseCalendar']); // 숙소 예약 캘린더 조회
+    $r->addRoute('GET', '/experiences/{experienceNo}/calendar', ['IndexController', 'experienceCalendar']); // 숙소 예약 캘린더 조회
+    $r->addRoute('GET', '/users/{userNo}/reservations', ['IndexController', 'reservationList']); // 사용자 예약 목록 조회
     $r->addRoute('POST', '/houses/{houseNo}/reservations', ['IndexController', 'houseReservation']); // 숙소 예약 추가
+    $r->addRoute('POST', '/experiences/{experienceNo}/reservations', ['IndexController', 'experienceReservation']); // 체험 예약 추가
     $r->addRoute('GET', '/search', ['IndexController', 'searchList']); // 검색 가능 목록
     $r->addRoute('POST', '/users/{userNo}/saveList', ['IndexController', 'createSaveList']); // 저장 목록 추가
     $r->addRoute('GET', '/users/{userNo}/saveList', ['IndexController', 'selectSaveList']); // 저장 목록 조회

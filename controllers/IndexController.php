@@ -435,6 +435,27 @@ try {
          * 마지막 수정 날짜 : 20.02.16
          */
 
+        case "experienceCalendar":
+            http_response_code(200);
+            $StopList = notAvailableExperience($vars["experienceNo"]);
+            $json = json_encode($StopList);
+            $object = json_decode($json);
+            for ($i = 0; $i < count($object); $i++) {
+                $Nrv_list .= $object[$i]->date . ',';
+            }
+            if ($Nrv_list) {
+                $result = substr($Nrv_list , 0, -1);
+            } else {
+                $result = "";
+            }
+            $res->result->reservationList = availableExperience($vars["experienceNo"]);
+            $res->result->reservationStopDate = $result;
+            $res->isSuccess = TRUE;
+            $res->code = 100;
+            $res->message = "조회 성공";
+            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+            break;
+
         /*
          * API No. 16
          * API Name : 사용자 예약 목록 API
@@ -453,10 +474,10 @@ try {
             $json = json_encode(houseHost($vars["houseNo"]));
             $host = json_decode($json);
             $host->hostNo;
-            if($req->userNo != $host->hostNo){
-                if(isValidDate($req->checkIn)) {
-                    if(isValidDate($req->checkOut)){
-                        if(isValidGuest($req->guestCnt)) {
+            if ($req->userNo != $host->hostNo) {
+                if (isValidDate($req->checkIn)) {
+                    if (isValidDate($req->checkOut)) {
+                        if (isValidGuest($req->guestCnt)) {
                             $rv_list = array();
                             for ($i = 0; $i < count($rv); $i++) {
                                 if (date_diff(array_values($rv[$i])[0], array_values($rv[$i])[1]) == 1) {
@@ -466,7 +487,7 @@ try {
                                 }
                             }
                             $rv_date = dateGap($req->checkIn, date('Y-m-d', strtotime($req->checkOut . ' -1 day')));
-                            if(array_intersect($rv_list, $rv_date)){
+                            if (array_intersect($rv_list, $rv_date)) {
                                 $res->isSuccess = FALSE;
                                 $res->code = 200;
                                 $res->message = "예약 불가능한 날짜 입니다.";
@@ -519,6 +540,62 @@ try {
          * 마지막 수정 날짜 : 20.02.16
          */
 
+        case "experienceReservation":
+            http_response_code(200);
+            $json = json_encode(experienceHost($vars["experienceNo"]));
+            $host = json_decode($json);
+            if ($req->userNo != $host->hostNo) {
+                if(!experienceReservationExist($vars["experienceNo"], $req->userNo, $req->date)){
+                    if (isValidDate($req->date)) {
+                        if (isValidGuest($req->guestCnt)) {
+                            $total = json_encode(experienceGuestCnt($vars["experienceNo"], $req->date));
+                            $guest = json_decode($json);
+                            if (($guest->totalGuestCnt + $req->guestCnt) > $guest->groupMax) {
+                                $res->isSuccess = FALSE;
+                                $res->code = 200;
+                                $res->message = "당일 예약 가능인원을 초과했습니다.";
+                                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                                break;
+                            } else {
+                                $res->result = experienceReservation($req->userNo, $vars["experienceNo"], $req->date, $req->guestCnt, $req->totalPrice, $req->guest);
+                                $res->isSuccess = TRUE;
+                                $res->code = 100;
+                                $res->message = "예약 성공";
+                                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                                break;
+                            }
+
+                        } else {
+                            $res->isSuccess = FALSE;
+                            $res->code = 204;
+                            $res->message = "게스트 수는 1명 이상이 필요합니다.";
+                            echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                            break;
+                        }
+
+                    } else {
+                        $res->isSuccess = FALSE;
+                        $res->code = 203;
+                        $res->message = "체험 날짜를 날짜 형식으로 입력해주세요.";
+                        echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                        break;
+                    }
+                } else {
+                    $res->isSuccess = FALSE;
+                    $res->code = 202;
+                    $res->message = "해당 날짜에 이미 예약된 체험이 존재합니다. 같은 날짜에 중복예약이 불가능합니다.";
+                    echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                    break;
+                }
+
+            } else {
+                $res->isSuccess = FALSE;
+                $res->code = 201;
+                $res->message = "호스트는 예약이 불가능합니다.";
+                echo json_encode($res, JSON_NUMERIC_CHECK | JSON_UNESCAPED_UNICODE);
+                break;
+            }
+
         /*
          * API No. 19
          * API Name : 유저 정보 조회 API
@@ -565,7 +642,7 @@ try {
                         $result = houseList($search);;
                         $json = json_encode($result);
                         $object = json_decode($json);
-                        $results = explode( ',', $object->existLocation );
+                        $results = explode(',', $object->existLocation);
                         $res->result = $results;
                         $res->isSuccess = TRUE;
                         $res->code = 100;
@@ -577,7 +654,7 @@ try {
                         $result = experienceList($search);
                         $json = json_encode($result);
                         $object = json_decode($json);
-                        $results = explode( ',', $object->existLocation );
+                        $results = explode(',', $object->existLocation);
                         $res->result = $results;
                         $res->isSuccess = TRUE;
                         $res->code = 100;
@@ -594,7 +671,7 @@ try {
          */
         case "createSaveList":
             http_response_code(200);
-            if($req->houseNo == null && $req->experienceNo == null) {
+            if ($req->houseNo == null && $req->experienceNo == null) {
                 $res->isSuccess = FALSE;
                 $res->code = 200;
                 $res->message = "숙소 번호나 체험 번호가 필요합니다.";
@@ -635,8 +712,8 @@ try {
 
                     case "detail" :
                         $saveLocation = $_GET["saveLocation"];
-                        $search = explode( ' ', $saveLocation );
-                        if($search[1] == "숙소") {
+                        $search = explode(' ', $saveLocation);
+                        if ($search[1] == "숙소") {
                             $res->result = houseSaveList($vars["userNo"], $search[0]);
                             $res->isSuccess = TRUE;
                             $res->code = 100;
@@ -700,9 +777,9 @@ try {
 
         case "fcm":
             http_response_code(200);
-            $fcmRes=json_decode(json_encode(getFcmToken()));
+            $fcmRes = json_decode(json_encode(getFcmToken()));
             $cnt = count(getFcmToken());
-            for($i=0;$i<=$cnt;$i++){
+            for ($i = 0; $i <= $cnt; $i++) {
                 $res->result = fcmSend($fcmRes[$i]->fcmToken);
             }
             //$res->result = fcmSend('cferhGt65vA:APA91bGtgP2D7gI4-Uzt6KYuVbet8vSbINUZl3ozdKrIR9ObFjw9JSV-cRqd44D7WOja--l_ki6Xs6m3mxgZEAMCjYSg4J3CE5Ozpl3Zrr2JSTtADpKA8lA6xy6BtJQAT25I_beUB3fY');
