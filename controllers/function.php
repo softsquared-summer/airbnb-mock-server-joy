@@ -28,44 +28,44 @@ function isValidHeader($jwt, $key)
     }
 }
 
-function sendFcm($fcmToken, $data)
-{
-    $url = 'https://fcm.googleapis.com/fcm/send';
-
-    $headers = array(
-        'Authorization: key=' . 'AAAAcXRtS2c:APA91bE_tByQzJXaZ3vgpUh8TMAfywkJ9GrRTP2e-hMIj4uLq04WK_b_M5uRzY4jWkfOhi0GTH2S9tJhXRKAnyAQzThsiQWa-geX6hRJuuEIFwBoBoYs5cu0xzy8Xs9YGINqPmdU3LtE',
-        'Content-Type: application/json'
-    );
-
-    $fields['data'] = $data;
-
-        $notification['title'] = $data['title'];
-        $notification['body'] = $data['body'];
-        $notification['sound'] = 'default';
-        $fields['notification'] = $notification;
-
-    $fields['to'] = $fcmToken;
-    $fields['content_available'] = true;
-    $fields['priority'] = "high";
-
-    $fields = json_encode($fields, JSON_NUMERIC_CHECK);
-
-//    echo $fields;
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
-
-    $result = curl_exec($ch);
-    if ($result === FALSE) {
-        //die('FCM Send Error: ' . curl_error($ch));
-    }
-    curl_close($ch);
-    return $result;
-}
+//function sendFcm($fcmToken, $data)
+//{
+//    $url = 'https://fcm.googleapis.com/fcm/send';
+//
+//    $headers = array(
+//        'Authorization: key=' . 'AAAAcXRtS2c:APA91bE_tByQzJXaZ3vgpUh8TMAfywkJ9GrRTP2e-hMIj4uLq04WK_b_M5uRzY4jWkfOhi0GTH2S9tJhXRKAnyAQzThsiQWa-geX6hRJuuEIFwBoBoYs5cu0xzy8Xs9YGINqPmdU3LtE',
+//        'Content-Type: application/json'
+//    );
+//
+//    $fields['data'] = $data;
+//
+//        $notification['title'] = $data['title'];
+//        $notification['body'] = $data['body'];
+//        $notification['sound'] = 'default';
+//        $fields['notification'] = $notification;
+//
+//    $fields['to'] = $fcmToken;
+//    $fields['content_available'] = true;
+//    $fields['priority'] = "high";
+//
+//    $fields = json_encode($fields, JSON_NUMERIC_CHECK);
+//
+////    echo $fields;
+//
+//    $ch = curl_init();
+//    curl_setopt($ch, CURLOPT_URL, $url);
+//    curl_setopt($ch, CURLOPT_POST, true);
+//    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+//    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+//    curl_setopt($ch, CURLOPT_POSTFIELDS, $fields);
+//
+//    $result = curl_exec($ch);
+//    if ($result === FALSE) {
+//        //die('FCM Send Error: ' . curl_error($ch));
+//    }
+//    curl_close($ch);
+//    return $result;
+//}
 
 function getTodayByTimeStamp()
 {

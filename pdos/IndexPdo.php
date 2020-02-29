@@ -31,10 +31,22 @@ function profile($no)
        image,
        info,
        concat(DATE_FORMAT(createdAt, '%Y'), '년', ' ', DATE_FORMAT(createdAt, '%m'), '월') as createdDate,
-       location,
-       school,
-       job,
-       language
+       case when location is null
+           then ''
+           else location
+           end as location,
+       case when school is null
+           then ''
+           else school
+           end as school,
+       case when job is null
+           then ''
+           else job
+           end as job,
+       case when language is null
+           then ''
+           else language
+           end as language
 FROM user WHERE no = ?;";
 
     $st = $pdo->prepare($query);
@@ -54,7 +66,7 @@ FROM user WHERE no = ?;";
 function userCreate($phone, $firstName, $lastName, $birthday, $email, $pw)
 {
     $pdo = pdoSqlConnect();
-    $query = "INSERT INTO user (no, phone, firstName, lastName, birthday, email, pw, createdAt) VALUES (null, ?, ?, ?, ?, ?, password(?), CURRENT_TIMESTAMP);";
+    $query = "INSERT INTO user (no, phone, firstName, lastName, birthday, email, pw, createdAt) VALUES (null, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);";
 
     $st = $pdo->prepare($query);
     $st->execute([$phone, $firstName, $lastName, $birthday, $email, $pw]);
@@ -1801,7 +1813,12 @@ function getFcmToken()
     $query = "SELECT fcmToken
 FROM user
 left outer join houseRv hR on user.no = hR.userNo
-WHERE DATEDIFF(hR.checkIn,CURRENT_DATE) = 1;";
+WHERE DATEDIFF(hR.checkIn,CURRENT_DATE) = 1
+UNION ALL
+SELECT fcmToken
+FROM user
+left outer join experienceRv eR on user.no = eR.userNo
+WHERE DATEDIFF(eR.date,CURRENT_DATE) = 1;";
 
     $st = $pdo->prepare($query);
     $st->execute();
